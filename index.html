@@ -7,9 +7,8 @@
   <meta name="description" content="Diagnóstico de carreira musical e plano de ação personalizado — Vale Produção." />
   <link rel="icon" href="./assets/logo.png" />
 
-  <!-- Cache busting (pode subir o número quando atualizar) -->
-  <link rel="stylesheet" href="./css/styles.css?v=6" />
-  <link rel="stylesheet" href="./css/desktop-fix.css?v=6" />
+  <link rel="stylesheet" href="./css/styles.css?v=7" />
+  <link rel="stylesheet" href="./css/desktop-fix.css?v=7" />
 </head>
 <body>
   <div class="app">
@@ -43,9 +42,8 @@
             <div class="hero__badge">Premium • AAA • Mobile-first</div>
             <h1 class="hero__title">Relatório inteligente para sua carreira musical</h1>
             <p class="hero__desc">
-              Responda algumas perguntas e receba um diagnóstico completo com
-              direcionamentos personalizados, cronograma mensal e anual, painel de métricas,
-              histórico e comparação de evolução.
+              Diagnóstico completo com direcionamentos, cronogramas, métricas,
+              histórico, comparação de evolução e agora: campanhas de lançamento.
             </p>
 
             <div class="hero__cta">
@@ -59,16 +57,15 @@
                 <div class="metaItem__value">Crescimento real + monetização</div>
               </div>
               <div class="metaItem">
-                <div class="metaItem__title">Entrega</div>
-                <div class="metaItem__value">Plano 30 dias + 12 meses</div>
-              </div>
-              <div class="metaItem">
                 <div class="metaItem__title">Evolução</div>
                 <div class="metaItem__value">Comparar relatórios + gráficos</div>
               </div>
+              <div class="metaItem">
+                <div class="metaItem__title">Campanhas</div>
+                <div class="metaItem__value">Pré / Lançamento / Pós</div>
+              </div>
             </div>
 
-            <!-- History preview -->
             <div class="historyPreview">
               <div class="historyPreview__top">
                 <div class="historyPreview__title">Histórico (neste dispositivo)</div>
@@ -120,7 +117,6 @@
       <section id="screenReport" class="screen">
         <div class="report">
 
-          <!-- Cover -->
           <div class="cover">
             <div class="cover__bg"></div>
             <div class="cover__inner">
@@ -166,6 +162,7 @@
             </div>
           </div>
 
+          <!-- Status/Pilares -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Status</div>
@@ -186,7 +183,7 @@
             </div>
           </div>
 
-          <!-- NEW: Evolution / Compare -->
+          <!-- Evolução (Etapa 5) permanece -->
           <div class="panel">
             <div class="panel__kicker">Evolução</div>
             <div class="panel__title">Comparar relatórios</div>
@@ -247,6 +244,66 @@
             </div>
           </div>
 
+          <!-- NEW: Campaigns -->
+          <div class="panel">
+            <div class="panel__kicker">Campanhas</div>
+            <div class="panel__title">Planejar lançamento (Single/EP/Álbum/Clipe)</div>
+            <div class="panel__desc">
+              Crie uma campanha e o app gera automaticamente: cronograma por fase + metas semanais + checklist profissional.
+            </div>
+
+            <div class="campaignForm">
+              <div class="campaignField">
+                <div class="compareLabel">Tipo</div>
+                <select id="campType" class="select">
+                  <option value="single">Single</option>
+                  <option value="ep">EP</option>
+                  <option value="album">Álbum</option>
+                  <option value="clipe">Clipe</option>
+                </select>
+              </div>
+
+              <div class="campaignField">
+                <div class="compareLabel">Nome do projeto</div>
+                <input id="campName" class="select" type="text" placeholder="Ex.: Caminhos da Fé (Single)" />
+              </div>
+
+              <div class="campaignField">
+                <div class="compareLabel">Data de lançamento</div>
+                <input id="campRelease" class="select" type="date" />
+              </div>
+
+              <div class="campaignField">
+                <div class="compareLabel">Orçamento (R$)</div>
+                <input id="campBudget" class="select" type="number" inputmode="numeric" min="0" step="50" placeholder="Ex.: 300" />
+              </div>
+
+              <div class="campaignField">
+                <div class="compareLabel">Foco</div>
+                <select id="campFocus" class="select">
+                  <option value="streams">Streams</option>
+                  <option value="seguidores">Seguidores</option>
+                  <option value="shows">Shows</option>
+                  <option value="marca">Marca/Autoridade</option>
+                </select>
+              </div>
+
+              <button id="btnBuildCampaign" class="btn btn--primary">Gerar campanha</button>
+              <button id="btnSaveCampaign" class="btn btn--ghost">Salvar campanha</button>
+              <button id="btnExportCampaign" class="btn btn--ghost">Exportar campanha (JSON)</button>
+            </div>
+
+            <div id="campaignOutput" class="campaignOut"></div>
+
+            <div class="campaignSaved">
+              <div class="abox">
+                <div class="abox__title">Campanhas salvas (neste dispositivo)</div>
+                <div id="campaignList" class="historyList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics -->
           <div class="panel">
             <div class="panel__kicker">Métricas & Analytics</div>
             <div class="panel__title">Painel de performance</div>
@@ -268,6 +325,7 @@
             </div>
           </div>
 
+          <!-- Prioridades/Checklist -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Prioridades</div>
@@ -285,6 +343,7 @@
             </div>
           </div>
 
+          <!-- Timelines -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Cronograma</div>
@@ -298,12 +357,14 @@
             </div>
           </div>
 
+          <!-- Recommendations -->
           <div class="panel">
             <div class="panel__kicker">Direcionamentos</div>
             <div class="panel__title">Recomendações personalizadas</div>
             <div id="recommendations" class="recs"></div>
           </div>
 
+          <!-- History -->
           <div class="panel">
             <div class="panel__kicker">Histórico</div>
             <div class="panel__title">Relatórios salvos (neste dispositivo)</div>
@@ -320,7 +381,6 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
   </div>
 
   <script type="module" src="./js/app.js"></script>
