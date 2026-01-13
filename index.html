@@ -6,7 +6,10 @@
   <title>Vale Produção — Gerenciador de Carreira</title>
   <meta name="description" content="Diagnóstico de carreira musical e plano de ação personalizado — Vale Produção." />
   <link rel="icon" href="./assets/logo.png" />
-  <link rel="stylesheet" href="./css/styles.css" />
+
+  <!-- Cache busting (pode subir o número quando atualizar) -->
+  <link rel="stylesheet" href="./css/styles.css?v=6" />
+  <link rel="stylesheet" href="./css/desktop-fix.css?v=6" />
 </head>
 <body>
   <div class="app">
@@ -41,7 +44,8 @@
             <h1 class="hero__title">Relatório inteligente para sua carreira musical</h1>
             <p class="hero__desc">
               Responda algumas perguntas e receba um diagnóstico completo com
-              direcionamentos personalizados, cronograma mensal e anual, painel de métricas e histórico.
+              direcionamentos personalizados, cronograma mensal e anual, painel de métricas,
+              histórico e comparação de evolução.
             </p>
 
             <div class="hero__cta">
@@ -59,12 +63,12 @@
                 <div class="metaItem__value">Plano 30 dias + 12 meses</div>
               </div>
               <div class="metaItem">
-                <div class="metaItem__title">Histórico</div>
-                <div class="metaItem__value">Salvar e comparar evolução</div>
+                <div class="metaItem__title">Evolução</div>
+                <div class="metaItem__value">Comparar relatórios + gráficos</div>
               </div>
             </div>
 
-            <!-- NEW: History preview -->
+            <!-- History preview -->
             <div class="historyPreview">
               <div class="historyPreview__top">
                 <div class="historyPreview__title">Histórico (neste dispositivo)</div>
@@ -116,7 +120,7 @@
       <section id="screenReport" class="screen">
         <div class="report">
 
-          <!-- NEW: Cover -->
+          <!-- Cover -->
           <div class="cover">
             <div class="cover__bg"></div>
             <div class="cover__inner">
@@ -162,7 +166,6 @@
             </div>
           </div>
 
-          <!-- Stage -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Status</div>
@@ -183,7 +186,67 @@
             </div>
           </div>
 
-          <!-- Analytics -->
+          <!-- NEW: Evolution / Compare -->
+          <div class="panel">
+            <div class="panel__kicker">Evolução</div>
+            <div class="panel__title">Comparar relatórios</div>
+            <div class="panel__desc">
+              Selecione dois relatórios do histórico e veja o que melhorou e o que precisa de ajuste.
+            </div>
+
+            <div class="compareRow">
+              <div class="compareField">
+                <div class="compareLabel">Relatório A</div>
+                <select id="compareA" class="select"></select>
+              </div>
+              <div class="compareField">
+                <div class="compareLabel">Relatório B</div>
+                <select id="compareB" class="select"></select>
+              </div>
+              <button id="btnCompare" class="btn btn--primary">Comparar</button>
+            </div>
+
+            <div class="compareGrid">
+              <div class="cmpCard">
+                <div class="cmpCard__top">
+                  <div class="cmpCard__name">Score</div>
+                  <div id="cmpScoreDelta" class="delta delta--neutral">—</div>
+                </div>
+                <div id="cmpScore" class="cmpCard__val">—</div>
+                <div id="sparkScore" class="spark"></div>
+              </div>
+
+              <div class="cmpCard">
+                <div class="cmpCard__top">
+                  <div class="cmpCard__name">Ouvintes mensais</div>
+                  <div id="cmpMlDelta" class="delta delta--neutral">—</div>
+                </div>
+                <div id="cmpMl" class="cmpCard__val">—</div>
+                <div id="sparkMl" class="spark"></div>
+              </div>
+
+              <div class="cmpCard">
+                <div class="cmpCard__top">
+                  <div class="cmpCard__name">Seguidores Spotify</div>
+                  <div id="cmpSfDelta" class="delta delta--neutral">—</div>
+                </div>
+                <div id="cmpSf" class="cmpCard__val">—</div>
+                <div id="sparkSf" class="spark"></div>
+              </div>
+            </div>
+
+            <div class="compareNotes">
+              <div class="abox">
+                <div class="abox__title">Leitura rápida</div>
+                <ul id="compareInsights" class="alist"></ul>
+              </div>
+              <div class="abox">
+                <div class="abox__title">Ações recomendadas</div>
+                <ul id="compareActions" class="alist"></ul>
+              </div>
+            </div>
+          </div>
+
           <div class="panel">
             <div class="panel__kicker">Métricas & Analytics</div>
             <div class="panel__title">Painel de performance</div>
@@ -205,7 +268,6 @@
             </div>
           </div>
 
-          <!-- Priorities -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Prioridades</div>
@@ -223,7 +285,6 @@
             </div>
           </div>
 
-          <!-- Timelines -->
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Cronograma</div>
@@ -237,14 +298,12 @@
             </div>
           </div>
 
-          <!-- Recommendations -->
           <div class="panel">
             <div class="panel__kicker">Direcionamentos</div>
             <div class="panel__title">Recomendações personalizadas</div>
             <div id="recommendations" class="recs"></div>
           </div>
 
-          <!-- NEW: History inside report -->
           <div class="panel">
             <div class="panel__kicker">Histórico</div>
             <div class="panel__title">Relatórios salvos (neste dispositivo)</div>
@@ -260,7 +319,6 @@
 
     </main>
 
-    <!-- Toast -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   </div>
