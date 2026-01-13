@@ -41,7 +41,7 @@
             <h1 class="hero__title">Relatório inteligente para sua carreira musical</h1>
             <p class="hero__desc">
               Responda algumas perguntas e receba um diagnóstico completo com
-              direcionamentos personalizados, cronograma mensal e anual, e um painel de métricas.
+              direcionamentos personalizados, cronograma mensal e anual, painel de métricas e histórico.
             </p>
 
             <div class="hero__cta">
@@ -59,8 +59,19 @@
                 <div class="metaItem__value">Plano 30 dias + 12 meses</div>
               </div>
               <div class="metaItem">
-                <div class="metaItem__title">Métricas</div>
-                <div class="metaItem__value">Insights + metas sugeridas</div>
+                <div class="metaItem__title">Histórico</div>
+                <div class="metaItem__value">Salvar e comparar evolução</div>
+              </div>
+            </div>
+
+            <!-- NEW: History preview -->
+            <div class="historyPreview">
+              <div class="historyPreview__top">
+                <div class="historyPreview__title">Histórico (neste dispositivo)</div>
+                <button id="btnClearHistory" class="miniDanger">Limpar histórico</button>
+              </div>
+              <div id="historyListLanding" class="historyList">
+                <div class="historyEmpty">Ainda não há relatórios salvos.</div>
               </div>
             </div>
 
@@ -104,14 +115,50 @@
       <!-- Report -->
       <section id="screenReport" class="screen">
         <div class="report">
+
+          <!-- NEW: Cover -->
+          <div class="cover">
+            <div class="cover__bg"></div>
+            <div class="cover__inner">
+              <div class="cover__brand">
+                <img class="cover__logo" src="./assets/logo.png" alt="Vale Produção" />
+                <div class="cover__brandText">
+                  <div class="cover__name">Vale Produção</div>
+                  <div class="cover__tag">Relatório de Carreira — Premium</div>
+                </div>
+              </div>
+
+              <div class="cover__headline">
+                <div class="cover__h1">Diagnóstico & Plano de Ação</div>
+                <div id="reportSubtitle" class="cover__sub">—</div>
+              </div>
+
+              <div class="cover__stats">
+                <div class="coverStat">
+                  <div class="coverStat__k">Status</div>
+                  <div id="stageLabel" class="coverStat__v">—</div>
+                </div>
+                <div class="coverStat">
+                  <div class="coverStat__k">Score</div>
+                  <div id="overallScore" class="coverStat__v">0</div>
+                </div>
+                <div class="coverStat">
+                  <div class="coverStat__k">Meta</div>
+                  <div id="nextGoal" class="coverStat__v coverStat__v--small">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="report__top">
             <div class="report__title">
               <div class="report__h1">Relatório de Carreira</div>
-              <div id="reportSubtitle" class="report__sub">—</div>
+              <div id="reportSubtitle2" class="report__sub">—</div>
             </div>
             <div class="report__actions">
               <button id="btnEdit" class="btn btn--ghost">Editar respostas</button>
-              <button id="btnPrint" class="btn btn--primary">Imprimir / PDF</button>
+              <button id="btnExportJSON" class="btn btn--ghost">Exportar JSON</button>
+              <button id="btnPrint" class="btn btn--primary">Baixar PDF</button>
             </div>
           </div>
 
@@ -119,18 +166,13 @@
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Status</div>
-              <div id="stageLabel" class="panel__title">—</div>
+              <div id="stageLabel2" class="panel__title">—</div>
               <div id="stageHint" class="panel__desc">—</div>
 
               <div class="score">
                 <div class="score__label">Score geral</div>
-                <div id="overallScore" class="score__value">0</div>
+                <div id="overallScore2" class="score__value">0</div>
                 <div class="score__note">0–100 • Mais alto = mais pronto para escalar</div>
-              </div>
-
-              <div class="nextgoal">
-                <div class="nextgoal__label">Próxima meta recomendada</div>
-                <div id="nextGoal" class="nextgoal__value">—</div>
               </div>
             </div>
 
@@ -141,7 +183,7 @@
             </div>
           </div>
 
-          <!-- Analytics (NEW) -->
+          <!-- Analytics -->
           <div class="panel">
             <div class="panel__kicker">Métricas & Analytics</div>
             <div class="panel__title">Painel de performance</div>
@@ -200,6 +242,14 @@
             <div class="panel__kicker">Direcionamentos</div>
             <div class="panel__title">Recomendações personalizadas</div>
             <div id="recommendations" class="recs"></div>
+          </div>
+
+          <!-- NEW: History inside report -->
+          <div class="panel">
+            <div class="panel__kicker">Histórico</div>
+            <div class="panel__title">Relatórios salvos (neste dispositivo)</div>
+            <div class="panel__desc">Clique em um relatório para abrir.</div>
+            <div id="historyListReport" class="historyList"></div>
           </div>
 
           <footer class="report__footer">
