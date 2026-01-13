@@ -918,3 +918,92 @@ html[data-theme="light"] .coverStat{ background: rgba(255,255,255,.92); }
   .bar__fill, .acard__fill{ background: #444 !important; }
   .report__footer{ color:#333 !important; }
 }
+/* ===============================
+   DESKTOP FIX — PREMIUM LAYOUT
+   =============================== */
+@media (min-width: 1024px){
+
+  /* Centraliza tudo e limita largura */
+  .screens,
+  .topbar{
+    display: flex;
+    justify-content: center;
+  }
+
+  .screen,
+  .topbar{
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .hero__card,
+  .card,
+  .report{
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== Topbar desktop ===== */
+  .topbar{
+    height: 72px;
+  }
+
+  .topbar__brand{
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  .brand__logo{
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand__text{
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+  }
+
+  .brand__title{
+    font-size: 16px;
+  }
+
+  .brand__sub{
+    font-size: 13px;
+    opacity: .75;
+  }
+
+  /* ===== HERO desktop ===== */
+  .hero{
+    padding-top: 36px;
+    padding-bottom: 40px;
+  }
+
+  .hero__title{
+    font-size: 34px;
+    max-width: 720px;
+  }
+
+  .hero__desc{
+    font-size: 16px;
+    max-width: 640px;
+  }
+
+  .hero__cta{
+    margin-top: 22px;
+  }
+
+  .btn{
+    padding: 14px 22px;
+    font-size: 15px;
+  }
+
+  .hero__meta{
+    margin-top: 26px;
+  }
+}
