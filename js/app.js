@@ -5,6 +5,13 @@ import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 import { buildCompareUIData } from "./core/compare.js";
+import {
+  loadCampaigns,
+  buildCampaign,
+  addCampaign,
+  deleteCampaign,
+  findCampaign
+} from "./core/campaigns.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -72,6 +79,17 @@ const sparkSf = document.getElementById("sparkSf");
 const compareInsights = document.getElementById("compareInsights");
 const compareActions = document.getElementById("compareActions");
 
+// ✅ Campanhas (NOVO)
+const campType = document.getElementById("campType");
+const campName = document.getElementById("campName");
+const campDate = document.getElementById("campDate");
+const campBudget = document.getElementById("campBudget");
+const campFocus = document.getElementById("campFocus");
+const btnCreateCampaign = document.getElementById("btnCreateCampaign");
+const btnClearCampaigns = document.getElementById("btnClearCampaigns");
+const campaignList = document.getElementById("campaignList");
+const campaignDetail = document.getElementById("campaignDetail");
+
 let state = {
   idx: 0,
   answers: loadAnswers(),
@@ -88,6 +106,7 @@ function init(){
   btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
+  renderCampaigns(); // ✅ novo
 }
 
 function bind(){
@@ -118,6 +137,17 @@ function bind(){
   });
 
   btnCompare?.addEventListener("click", runCompare);
+
+  // ✅ Campanhas
+  btnCreateCampaign?.addEventListener("click", createCampaign);
+  btnClearCampaigns?.addEventListener("click", ()=>{
+    if(!confirm("Remover todas as campanhas deste dispositivo?")) return;
+    const all = loadCampaigns();
+    all.forEach(c => deleteCampaign(c.id));
+    renderCampaigns();
+    hideCampaignDetail();
+    toast("Campanhas removidas.");
+  });
 
   window.addEventListener("keydown", (e)=>{
     if(state.lastScreen !== "wizard") return;
@@ -184,6 +214,8 @@ function nextQ(){
   if(state.idx >= QUESTIONS.length - 1){
     buildReport();
     showScreen("report");
+    // ✅ garantir campanhas visíveis no report
+    renderCampaigns();
     return;
   }
   state.idx += 1;
@@ -430,6 +462,7 @@ function buildReport(){
   addReport(fullReport);
   renderHistory();
   renderCompareSelects(true);
+  renderCampaigns(); // ✅ manter atualizado
   toast("Relatório gerado e salvo no histórico.");
 }
 
@@ -508,6 +541,7 @@ function openReportFromHistory(id){
   buildReportFromStored(r);
   showScreen("report");
   renderCompareSelects(true);
+  renderCampaigns();
   toast("Relatório aberto do histórico.");
 }
 
@@ -515,7 +549,7 @@ function buildReportFromStored(fullReport){
   state.answers = fullReport.answers || {};
   saveAnswers(state.answers);
   state.lastBuiltReport = fullReport;
-  // reconstruir UI com mesmos dados
+
   const result = fullReport.result;
   const analytics = fullReport.analytics;
 
@@ -710,6 +744,125 @@ function resetAll(){
   state.idx = 0;
   renderQuestion();
   toast("Respostas removidas.");
+}
+
+// ✅ Campanhas (NOVO)
+function createCampaign(){
+  const type = campType?.value || "single";
+  const name = safeText(campName?.value || "");
+  const releaseDate = campDate?.value || "";
+  const budget = Number(campBudget?.value || 0);
+  const focus = campFocus?.value || "all";
+
+  if(!name){ toast("Digite o nome do projeto."); return; }
+  if(!releaseDate){ toast("Selecione a data de lançamento."); return; }
+
+  const built = buildCampaign({ type, name, releaseDate, budget, focus });
+  if(!built.ok){ toast(built.error || "Não foi possível criar a campanha."); return; }
+
+  addCampaign(built.campaign);
+  renderCampaigns();
+  openCampaignDetail(built.campaign.id);
+  toast("Campanha criada e salva.");
+}
+
+function renderCampaigns(){
+  if(!campaignList) return;
+  const arr = loadCampaigns();
+
+  if(!arr || arr.length === 0){
+    campaignList.innerHTML = `<div class="historyEmpty">Nenhuma campanha criada ainda.</div>`;
+    return;
+  }
+
+  campaignList.innerHTML = "";
+  arr.slice(0, 30).forEach(c=>{
+    const el = document.createElement("div");
+    el.className = "campItem";
+
+    const budget = Number(c.budget || 0);
+    const date = safeText(c.releaseDate || "");
+    const tag = (c.type || "single").toUpperCase();
+
+    el.innerHTML = `
+      <div class="campItem__top">
+        <div>
+          <div class="campItem__name">${escapeHtml(safeText(c.name || "Campanha"))}</div>
+          <div class="campItem__meta">Lançamento: ${escapeHtml(date)} • Orçamento: R$ ${escapeHtml(String(budget))}</div>
+        </div>
+        <div class="campItem__right">
+          <div class="campItem__tag">${escapeHtml(tag)}</div>
+        </div>
+      </div>
+
+      <div class="campItem__actions">
+        <button class="campMini" data-open="${escapeHtml(c.id)}">Abrir</button>
+        <button class="campMini campMini--danger" data-del="${escapeHtml(c.id)}">Excluir</button>
+      </div>
+    `;
+
+    el.querySelector("[data-open]")?.addEventListener("click", ()=>{
+      openCampaignDetail(c.id);
+    });
+
+    el.querySelector("[data-del]")?.addEventListener("click", ()=>{
+      if(!confirm("Excluir esta campanha?")) return;
+      deleteCampaign(c.id);
+      renderCampaigns();
+      hideCampaignDetail();
+      toast("Campanha excluída.");
+    });
+
+    campaignList.appendChild(el);
+  });
+}
+
+function openCampaignDetail(id){
+  const c = findCampaign(id);
+  if(!c){ toast("Campanha não encontrada."); return; }
+  if(!campaignDetail) return;
+
+  const budget = Number(c.budget || 0);
+  const type = (c.type || "single").toUpperCase();
+  const focus = safeText(c.focus || "all");
+  const date = safeText(c.releaseDate || "");
+
+  const weeks = Array.isArray(c?.plan?.weeks) ? c.plan.weeks : [];
+
+  campaignDetail.classList.add("campaignDetail--on");
+  campaignDetail.innerHTML = `
+    <div class="campaignDetail__top">
+      <div>
+        <div class="campaignDetail__title">${escapeHtml(safeText(c.name || "Campanha"))}</div>
+        <div class="campaignDetail__sub">Tipo: ${escapeHtml(type)} • Foco: ${escapeHtml(focus)} • Lançamento: ${escapeHtml(date)} • Orçamento: R$ ${escapeHtml(String(budget))}</div>
+      </div>
+      <div>
+        <button id="btnCloseCampaignDetail" class="campMini">Fechar</button>
+      </div>
+    </div>
+
+    <div class="weekList">
+      ${weeks.map(w=>`
+        <div class="weekCard">
+          <div class="weekCard__top">
+            <div class="weekCard__label">${escapeHtml(safeText(w.label||"Semana"))}</div>
+            <div class="weekCard__phase">${escapeHtml(safeText(w.phase||""))}</div>
+          </div>
+          <ul>
+            ${(Array.isArray(w.goals)? w.goals: []).map(g=>`<li>${escapeHtml(safeText(g))}</li>`).join("")}
+          </ul>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  document.getElementById("btnCloseCampaignDetail")?.addEventListener("click", hideCampaignDetail);
+}
+
+function hideCampaignDetail(){
+  if(!campaignDetail) return;
+  campaignDetail.classList.remove("campaignDetail--on");
+  campaignDetail.innerHTML = "";
 }
 
 function loadAnswers(){
