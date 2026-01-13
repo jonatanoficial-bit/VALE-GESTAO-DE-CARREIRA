@@ -1,126 +1,71 @@
 // js/core/compare.js
-import { safeText, formatNumber } from "../utils.js";
+function n(v){ const x = Number(v); return Number.isFinite(x) ? x : 0; }
 
-function n(v){ return (typeof v === "number" && Number.isFinite(v)) ? v : 0; }
-
-function deltaTag(d){
-  if(d > 0) return { text: `▲ +${formatNumber(d)}`, cls: "delta delta--up" };
-  if(d < 0) return { text: `▼ ${formatNumber(d)}`, cls: "delta delta--down" };
-  return { text: "— 0", cls: "delta delta--neutral" };
+function delta(a,b){
+  const d = b - a;
+  const text = (d>0?`+${d}`: String(d));
+  const cls = d>0 ? "delta delta--up" : d<0 ? "delta delta--down" : "delta delta--neutral";
+  return { d, text, cls };
 }
 
-function sparklineSVG(values, w=220, h=52, pad=6){
-  const v = values.map(n);
-  const max = Math.max(...v, 1);
-  const min = Math.min(...v, 0);
+function spark(values){
+  const w = 240, h = 52, pad = 6;
+  const arr = values.map(n);
+  const min = Math.min(...arr), max = Math.max(...arr);
+  const span = (max-min) || 1;
+  const step = (w - pad*2) / (arr.length-1 || 1);
 
-  const span = (max - min) || 1;
-  const innerW = w - pad*2;
-  const innerH = h - pad*2;
-
-  const pts = v.map((val, i)=>{
-    const x = pad + (innerW * (i/(Math.max(v.length-1,1))));
-    const y = pad + (innerH * (1 - ((val - min)/span)));
+  const pts = arr.map((v,i)=>{
+    const x = pad + i*step;
+    const y = pad + (h - pad*2) * (1 - ((v-min)/span));
     return [x,y];
   });
 
-  const d = pts.map((p,i)=> (i===0?`M ${p[0].toFixed(1)} ${p[1].toFixed(1)}`:`L ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)).join(" ");
-
-  const last = pts[pts.length-1] || [pad, pad+innerH];
-
+  const d = pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
   return `
-  <svg viewBox="0 0 ${w} ${h}" class="spark__svg" aria-hidden="true">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="rgba(217,180,92,.55)"></stop>
-        <stop offset="1" stop-color="rgba(240,212,138,.95)"></stop>
-      </linearGradient>
-    </defs>
-    <path d="${d}" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" />
-    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.5" fill="rgba(240,212,138,.95)"></circle>
-  </svg>`;
+    <svg class="spark__svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${d}" fill="none" stroke="rgba(240,212,138,.95)" stroke-width="2.4" />
+    </svg>
+  `;
 }
 
 export function buildCompareUIData(reports, idA, idB){
-  const a = reports.find(r => r?.id === idA) || null;
-  const b = reports.find(r => r?.id === idB) || null;
+  const a = reports.find(r=>r.id===idA);
+  const b = reports.find(r=>r.id===idB);
+  if(!a || !b) return { ok:false, message:"Relatórios não encontrados." };
 
-  if(!a || !b){
-    return { ok:false, message:"Selecione dois relatórios válidos." };
-  }
+  const sa = n(a?.result?.overall);
+  const sb = n(b?.result?.overall);
 
-  const scoreA = n(a?.result?.overall);
-  const scoreB = n(b?.result?.overall);
+  const mla = n(a?.answers?.monthly_listeners_num);
+  const mlb = n(b?.answers?.monthly_listeners_num);
 
-  const mlA = n(a?.answers?.monthly_listeners_num);
-  const mlB = n(b?.answers?.monthly_listeners_num);
-
-  const sfA = n(a?.answers?.spotify_followers_num);
-  const sfB = n(b?.answers?.spotify_followers_num);
-
-  const dScore = scoreB - scoreA;
-  const dMl = mlB - mlA;
-  const dSf = sfB - sfA;
-
-  const scoreDelta = deltaTag(dScore);
-  const mlDelta = deltaTag(dMl);
-  const sfDelta = deltaTag(dSf);
+  const sfa = n(a?.answers?.spotify_followers_num);
+  const sfb = n(b?.answers?.spotify_followers_num);
 
   const insights = [];
+  if(sb > sa) insights.push("O Score melhorou. Mantenha consistência e dobre o que deu certo.");
+  if(mlb > mla) insights.push("Ouvintes mensais cresceram. Hora de converter em seguidores (CTA + links).");
+  if(sfb <= sfa && mlb > mla) insights.push("Cresceu ouvintes mas não seguidores: precisa otimizar conversão no Spotify.");
+
   const actions = [];
-
-  const nameA = safeText(a.artistName || "Artista");
-  const nameB = safeText(b.artistName || "Artista");
-  const label = `${nameA} (${safeText(a.createdAtLabel)}) → ${nameB} (${safeText(b.createdAtLabel)})`;
-
-  if(dScore > 0){
-    insights.push(`Evolução positiva: o score subiu em ${formatNumber(dScore)} pontos.`);
-  }else if(dScore < 0){
-    insights.push(`Atenção: o score caiu ${formatNumber(Math.abs(dScore))} pontos. Revise consistência e foco.`);
-  }else{
-    insights.push("Score estável: bom para consolidar e subir com ações pontuais.");
-  }
-
-  if(dMl > 0) insights.push(`Ouvintes mensais cresceram +${formatNumber(dMl)}.`);
-  if(dMl < 0) insights.push(`Ouvintes mensais caíram ${formatNumber(Math.abs(dMl))}. Pode ser queda de conteúdo/lançamento.`);
-  if(dSf > 0) insights.push(`Seguidores Spotify cresceram +${formatNumber(dSf)}.`);
-  if(dSf < 0) insights.push(`Seguidores Spotify caíram ${formatNumber(Math.abs(dSf))}. Reforce CTA e perfil.`);
-
-  // Ações sugeridas
-  if(dMl <= 0){
-    actions.push("Criar série de 7 dias com refrão + contexto (storytelling) e CTA para Spotify.");
-    actions.push("Fazer 1 collab (dueto/reaction) com artista do mesmo nicho.");
-  }else{
-    actions.push("Duplicar o formato de conteúdo que mais trouxe ouvintes (repetir variações por 14 dias).");
-  }
-
-  if(dSf <= 0){
-    actions.push("Adicionar CTA ‘seguir + salvar’ em todo post do lançamento (principalmente Reels/TikTok).");
-    actions.push("Otimizar perfil Spotify: bio, imagens, canvas, playlist ‘This is’ e link fixo.");
-  }else{
-    actions.push("Criar rotina pós-lançamento: 10 conteúdos em 10 dias reforçando ‘seguir/salvar’.");
-  }
-
-  // Series para sparklines (histórico)
-  const sorted = [...reports].sort((x,y)=> (x.createdAt||"").localeCompare(y.createdAt||""));
-  const seriesScore = sorted.map(r => n(r?.result?.overall));
-  const seriesMl = sorted.map(r => n(r?.answers?.monthly_listeners_num));
-  const seriesSf = sorted.map(r => n(r?.answers?.spotify_followers_num));
+  actions.push("Faça 1 post/semana com CTA direto: ‘segue + salva’.");
+  actions.push("Repetir o top 2 conteúdos que mais performaram (variações do hook).");
+  actions.push("Enviar pitch para 10 novos curadores por semana (planilha).");
 
   return {
     ok:true,
-    label,
-    cards: {
-      score: { a: scoreA, b: scoreB, delta: scoreDelta },
-      ml: { a: mlA, b: mlB, delta: mlDelta },
-      sf: { a: sfA, b: sfB, delta: sfDelta }
+    cards:{
+      score:{ a:sa, b:sb, delta: delta(sa,sb) },
+      ml:{ a:mla, b:mlb, delta: delta(mla,mlb) },
+      sf:{ a:sfa, b:sfb, delta: delta(sfa,sfb) }
+    },
+    sparks:{
+      score: spark([sa, sb]),
+      ml: spark([mla, mlb]),
+      sf: spark([sfa, sfb])
     },
     insights,
-    actions,
-    sparks: {
-      score: sparklineSVG(seriesScore),
-      ml: sparklineSVG(seriesMl),
-      sf: sparklineSVG(seriesSf)
-    }
+    actions
   };
 }
