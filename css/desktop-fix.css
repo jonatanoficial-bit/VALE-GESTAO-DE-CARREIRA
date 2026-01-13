@@ -1,9 +1,4 @@
-/* Vale Produção — Desktop Fix (Premium polish)
-   Deixa o layout AAA no PC sem quebrar o mobile.
-*/
-
 @media (min-width: 920px){
-
   .screens{ padding-bottom: 30px; }
   .screen{ padding: 18px 20px 30px; }
 
@@ -19,17 +14,6 @@
   .hero__card{
     padding: 22px;
     border-radius: 30px;
-    background:
-      radial-gradient(1200px 320px at 22% 0%, rgba(240,212,138,.16), transparent 55%),
-      radial-gradient(1200px 320px at 80% 0%, rgba(217,180,92,.10), transparent 55%),
-      rgba(10,10,16,.32);
-  }
-
-  html[data-theme="light"] .hero__card{
-    background:
-      radial-gradient(1200px 320px at 22% 0%, rgba(240,212,138,.26), transparent 55%),
-      radial-gradient(1200px 320px at 80% 0%, rgba(217,180,92,.16), transparent 55%),
-      rgba(255,255,255,.96);
   }
 
   .hero__title{
@@ -45,10 +29,7 @@
 
   .hero__cta{ margin-top: 18px; }
 
-  .btn{
-    padding: 14px 18px;
-    border-radius: 20px;
-  }
+  .btn{ padding: 14px 18px; border-radius: 20px; }
 
   .hero__meta{
     grid-template-columns: repeat(3, 1fr);
@@ -58,15 +39,6 @@
   .metaItem{
     padding: 14px;
     border-radius: 22px;
-    background:
-      radial-gradient(900px 260px at 20% 0%, rgba(240,212,138,.08), transparent 55%),
-      rgba(0,0,0,.10);
-  }
-
-  html[data-theme="light"] .metaItem{
-    background:
-      radial-gradient(900px 260px at 20% 0%, rgba(240,212,138,.18), transparent 55%),
-      rgba(255,255,255,.96);
   }
 
   .report{ gap: 14px; }
@@ -74,12 +46,7 @@
   .cover__h1{ font-size: 26px; }
   .historyPreview{ padding: 14px; }
   .compareRow{ gap: 12px; }
-  .campaignOut{ gap: 14px; }
 }
-
-/* Micro polish */
-.topbar{ background: rgba(8,8,12,.78); }
-html[data-theme="light"] .topbar{ background: rgba(255,255,255,.86); }
 
 .historyItem:hover,
 .choice:hover,
