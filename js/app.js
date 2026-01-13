@@ -4,6 +4,7 @@ import { scoreAnswers, pillarMeta } from "./core/report.js";
 import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
+import { buildCompareUIData } from "./core/compare.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -58,6 +59,22 @@ const analyticsGoals = document.getElementById("analyticsGoals");
 const historyListLanding = document.getElementById("historyListLanding");
 const historyListReport = document.getElementById("historyListReport");
 
+// Compare UI (NEW)
+const compareA = document.getElementById("compareA");
+const compareB = document.getElementById("compareB");
+const btnCompare = document.getElementById("btnCompare");
+const cmpScore = document.getElementById("cmpScore");
+const cmpMl = document.getElementById("cmpMl");
+const cmpSf = document.getElementById("cmpSf");
+const cmpScoreDelta = document.getElementById("cmpScoreDelta");
+const cmpMlDelta = document.getElementById("cmpMlDelta");
+const cmpSfDelta = document.getElementById("cmpSfDelta");
+const sparkScore = document.getElementById("sparkScore");
+const sparkMl = document.getElementById("sparkMl");
+const sparkSf = document.getElementById("sparkSf");
+const compareInsights = document.getElementById("compareInsights");
+const compareActions = document.getElementById("compareActions");
+
 let state = {
   idx: 0,
   answers: loadAnswers(),
@@ -73,6 +90,7 @@ function init(){
   showScreen("landing", false);
   btnBack.style.visibility = "hidden";
   renderHistory();
+  renderCompareSelects();
 }
 
 function bind(){
@@ -81,15 +99,12 @@ function bind(){
   btnPrev.addEventListener("click", prevQ);
   btnNext.addEventListener("click", nextQ);
   btnBack.addEventListener("click", handleBack);
-  btnReset.addEventListener("click", resetAll);
-  btnEdit.addEventListener("click", ()=> showScreen("wizard"));
-  btnPrint.addEventListener("click", ()=> {
-    // A capa já está dentro do relatório, pronta pra PDF
-    window.print();
-  });
+  btnReset?.addEventListener("click", resetAll);
+  btnEdit?.addEventListener("click", ()=> showScreen("wizard"));
+  btnPrint?.addEventListener("click", ()=> window.print());
   btnTheme.addEventListener("click", toggleTheme);
 
-  btnExportJSON.addEventListener("click", ()=>{
+  btnExportJSON?.addEventListener("click", ()=>{
     if(!state.lastBuiltReport){
       toast("Gere um relatório antes.");
       return;
@@ -103,7 +118,13 @@ function bind(){
     if(!confirm("Deseja remover todo o histórico deste dispositivo?")) return;
     clearReports();
     renderHistory();
+    renderCompareSelects();
+    clearCompareView();
     toast("Histórico removido.");
+  });
+
+  btnCompare?.addEventListener("click", ()=>{
+    runCompare();
   });
 
   window.addEventListener("keydown", (e)=>{
@@ -351,17 +372,16 @@ function buildReport(){
   const stamp = new Date().toLocaleString("pt-BR");
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
 
-  // Cover
   reportSubtitle.textContent = subtitle;
-  stageLabel.textContent = result.stage.label;
-  overallScore.textContent = String(result.overall);
-  nextGoal.textContent = result.insights.nextGoal;
-
-  // Top (second)
   reportSubtitle2.textContent = subtitle;
+
+  stageLabel.textContent = result.stage.label;
   stageLabel2.textContent = result.stage.label;
   stageHint.textContent = result.stage.hint;
+
+  overallScore.textContent = String(result.overall);
   overallScore2.textContent = String(result.overall);
+  nextGoal.textContent = result.insights.nextGoal;
 
   pillarChips.innerHTML = "";
   Object.entries(result.pillarScores).forEach(([p,val])=>{
@@ -439,7 +459,6 @@ function buildReport(){
     recommendations.appendChild(el);
   });
 
-  // Build exportable report object (full)
   const fullReport = {
     id: uid(),
     createdAt: new Date().toISOString(),
@@ -452,9 +471,9 @@ function buildReport(){
 
   state.lastBuiltReport = fullReport;
 
-  // Save to history
   addReport(fullReport);
   renderHistory();
+  renderCompareSelects(true);
 
   toast("Relatório gerado e salvo no histórico.");
 }
@@ -493,7 +512,6 @@ function renderAnalytics(a){
 
 function renderHistory(){
   const reports = loadReports();
-
   renderHistoryList(historyListLanding, reports, true);
   renderHistoryList(historyListReport, reports, false);
 }
@@ -540,9 +558,9 @@ function openReportFromHistory(id){
   state.answers = r.answers || {};
   saveAnswers(state.answers);
 
-  // Render UI from stored report
   hydrateReportFromStored(r);
   showScreen("report");
+  renderCompareSelects(true);
   toast("Relatório aberto do histórico.");
 }
 
@@ -639,6 +657,118 @@ function hydrateReportFromStored(fullReport){
   });
 
   renderHistory();
+}
+
+function renderCompareSelects(autoPick=false){
+  if(!compareA || !compareB) return;
+
+  const reports = loadReports();
+  const opts = reports.map(r => ({
+    id: r.id,
+    label: `${safeText(r.artistName || "Artista")} • ${safeText(r.createdAtLabel || "")} • Score ${String(r?.result?.overall ?? 0)}`
+  }));
+
+  compareA.innerHTML = "";
+  compareB.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "Selecione…";
+  compareA.appendChild(empty.cloneNode(true));
+  compareB.appendChild(empty.cloneNode(true));
+
+  opts.forEach(o=>{
+    const a = document.createElement("option");
+    a.value = o.id;
+    a.textContent = o.label;
+    compareA.appendChild(a);
+
+    const b = document.createElement("option");
+    b.value = o.id;
+    b.textContent = o.label;
+    compareB.appendChild(b);
+  });
+
+  if(autoPick && reports.length >= 2){
+    // mais antigo x mais recente (para ver evolução real)
+    const sorted = [...reports].sort((x,y)=> (x.createdAt||"").localeCompare(y.createdAt||""));
+    compareA.value = sorted[0].id;
+    compareB.value = sorted[sorted.length-1].id;
+    runCompare();
+  }else{
+    clearCompareView();
+  }
+}
+
+function clearCompareView(){
+  if(cmpScore) cmpScore.textContent = "—";
+  if(cmpMl) cmpMl.textContent = "—";
+  if(cmpSf) cmpSf.textContent = "—";
+  if(cmpScoreDelta){ cmpScoreDelta.textContent = "—"; cmpScoreDelta.className = "delta delta--neutral"; }
+  if(cmpMlDelta){ cmpMlDelta.textContent = "—"; cmpMlDelta.className = "delta delta--neutral"; }
+  if(cmpSfDelta){ cmpSfDelta.textContent = "—"; cmpSfDelta.className = "delta delta--neutral"; }
+  if(sparkScore) sparkScore.innerHTML = "";
+  if(sparkMl) sparkMl.innerHTML = "";
+  if(sparkSf) sparkSf.innerHTML = "";
+  if(compareInsights) compareInsights.innerHTML = "";
+  if(compareActions) compareActions.innerHTML = "";
+}
+
+function runCompare(){
+  const idA = compareA?.value || "";
+  const idB = compareB?.value || "";
+  const reports = loadReports();
+
+  if(!idA || !idB){
+    toast("Selecione Relatório A e B.");
+    return;
+  }
+  if(idA === idB){
+    toast("Escolha relatórios diferentes.");
+    return;
+  }
+
+  const data = buildCompareUIData(reports, idA, idB);
+  if(!data.ok){
+    toast(data.message || "Não foi possível comparar.");
+    return;
+  }
+
+  // Cards
+  cmpScore.textContent = `${String(data.cards.score.a)} → ${String(data.cards.score.b)}`;
+  cmpMl.textContent = `${formatNumber(data.cards.ml.a)} → ${formatNumber(data.cards.ml.b)}`;
+  cmpSf.textContent = `${formatNumber(data.cards.sf.a)} → ${formatNumber(data.cards.sf.b)}`;
+
+  cmpScoreDelta.textContent = data.cards.score.delta.text;
+  cmpScoreDelta.className = data.cards.score.delta.cls;
+
+  cmpMlDelta.textContent = data.cards.ml.delta.text;
+  cmpMlDelta.className = data.cards.ml.delta.cls;
+
+  cmpSfDelta.textContent = data.cards.sf.delta.text;
+  cmpSfDelta.className = data.cards.sf.delta.cls;
+
+  // Sparks
+  sparkScore.innerHTML = data.sparks.score;
+  sparkMl.innerHTML = data.sparks.ml;
+  sparkSf.innerHTML = data.sparks.sf;
+
+  // Lists
+  compareInsights.innerHTML = "";
+  data.insights.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    compareInsights.appendChild(li);
+  });
+
+  compareActions.innerHTML = "";
+  data.actions.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    compareActions.appendChild(li);
+  });
+
+  toast("Comparação atualizada.");
 }
 
 function resetAll(){
