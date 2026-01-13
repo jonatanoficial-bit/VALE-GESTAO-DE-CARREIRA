@@ -7,8 +7,8 @@
   <meta name="description" content="Diagnóstico de carreira musical e plano de ação personalizado — Vale Produção." />
   <link rel="icon" href="./assets/logo.png" />
 
-  <link rel="stylesheet" href="./css/styles.css?v=10" />
-  <link rel="stylesheet" href="./css/desktop-fix.css?v=10" />
+  <link rel="stylesheet" href="./css/styles.css?v=11" />
+  <link rel="stylesheet" href="./css/desktop-fix.css?v=11" />
 </head>
 <body>
   <div class="app">
@@ -261,6 +261,79 @@
             </div>
           </div>
 
+          <!-- ✅ NOVO: Campanhas -->
+          <div class="panel">
+            <div class="panel__kicker">Campanhas</div>
+            <div class="panel__title">Pré / Lançamento / Pós</div>
+            <div class="panel__desc">
+              Crie um plano de campanha por lançamento e salve aqui. Tudo fica neste dispositivo.
+            </div>
+
+            <div class="campaignGrid">
+              <div class="campaignForm">
+                <div class="campaignForm__row">
+                  <div class="field">
+                    <label>Tipo</label>
+                    <select id="campType" class="select">
+                      <option value="single">Single</option>
+                      <option value="album">Álbum / EP</option>
+                      <option value="clip">Clipe</option>
+                      <option value="turne">Turnê / Eventos</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Nome do projeto</label>
+                    <input id="campName" type="text" placeholder="Ex.: Caminhos da Fé (Single)" />
+                  </div>
+                </div>
+
+                <div class="campaignForm__row">
+                  <div class="field">
+                    <label>Data de lançamento</label>
+                    <input id="campDate" type="date" />
+                  </div>
+                  <div class="field">
+                    <label>Orçamento (R$)</label>
+                    <input id="campBudget" type="number" inputmode="numeric" min="0" step="50" placeholder="Ex.: 300" />
+                  </div>
+                </div>
+
+                <div class="campaignForm__row">
+                  <div class="field">
+                    <label>Foco</label>
+                    <select id="campFocus" class="select">
+                      <option value="streaming">Streaming</option>
+                      <option value="video">YouTube / Shorts</option>
+                      <option value="social">Reels / TikTok</option>
+                      <option value="shows">Shows</option>
+                      <option value="all">Completo</option>
+                    </select>
+                  </div>
+
+                  <div class="campaignForm__actions">
+                    <button id="btnCreateCampaign" class="btn btn--primary">Gerar campanha</button>
+                    <button id="btnClearCampaigns" class="btn btn--ghost">Limpar campanhas</button>
+                  </div>
+                </div>
+
+                <div class="campaignTip">
+                  Dica: Defina a data primeiro. O sistema cria um plano pronto em semanas para você executar.
+                </div>
+              </div>
+
+              <div class="campaignListWrap">
+                <div class="campaignListTop">
+                  <div class="campaignListTitle">Campanhas salvas</div>
+                  <div class="campaignListSub">Clique para abrir o plano</div>
+                </div>
+
+                <div id="campaignList" class="campaignList"></div>
+              </div>
+            </div>
+
+            <div id="campaignDetail" class="campaignDetail"></div>
+          </div>
+
           <div class="grid">
             <div class="panel">
               <div class="panel__kicker">Prioridades</div>
@@ -315,6 +388,6 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <script type="module" src="./js/app.js?v=10"></script>
+  <script type="module" src="./js/app.js?v=11"></script>
 </body>
 </html>
