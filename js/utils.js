@@ -17,7 +17,6 @@ export function formatNumber(num){
 }
 
 export function uid(){
-  // id simples e estável (sem libs)
   return "r_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
 }
 
