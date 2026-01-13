@@ -666,3 +666,59 @@ button{ font:inherit; }
   .card, .panel, .rec, .titem, .check{ box-shadow: none !important; }
   .main{ padding: 0; }
 }
+/* ====== PART 2: Numeric fields (premium) ====== */
+.numrow{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.numrow__input{
+  width:100%;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(217,180,92,.18);
+  background: rgba(10,10,16,.35);
+  color: var(--text);
+  outline:none;
+  box-shadow: var(--shadow2);
+  font-weight: 720;
+  letter-spacing: .2px;
+}
+
+[data-theme="light"] .numrow__input{
+  background: rgba(255,255,255,.96);
+}
+
+.numrow__input:focus{
+  border-color: rgba(240,212,138,.45);
+  filter: brightness(1.03);
+}
+
+.numrow__hint{
+  color: var(--muted2);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+/* Improve input/textarea visuals for premium */
+.field input[type="text"], .field textarea{
+  width:100%;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(217,180,92,.18);
+  background: rgba(10,10,16,.35);
+  color: var(--text);
+  outline:none;
+  box-shadow: var(--shadow2);
+}
+
+[data-theme="light"] .field input[type="text"], 
+[data-theme="light"] .field textarea{
+  background: rgba(255,255,255,.96);
+}
+
+.field input[type="text"]:focus, .field textarea:focus{
+  border-color: rgba(240,212,138,.45);
+  filter: brightness(1.03);
+}
