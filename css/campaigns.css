@@ -1,0 +1,206 @@
+/* Vale Produção — Campanhas (add-on seguro) */
+
+.campaignGrid{
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 920px){
+  .campaignGrid{ grid-template-columns: 1.2fr .8fr; }
+}
+
+.campaignForm{
+  border-radius: 24px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  padding: 14px;
+}
+
+html[data-theme="light"] .campaignForm{
+  background: rgba(255,255,255,.92);
+}
+
+.campaignForm__row{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (min-width: 920px){
+  .campaignForm__row{ grid-template-columns: 1fr 1fr; }
+}
+
+.campaignForm__actions{
+  display:flex;
+  gap: 10px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.campaignTip{
+  margin-top: 10px;
+  color: var(--muted2);
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1.35;
+  border-radius: 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(217,180,92,.10);
+  background: rgba(0,0,0,.06);
+}
+
+html[data-theme="light"] .campaignTip{
+  background: rgba(255,255,255,.95);
+}
+
+.campaignListWrap{
+  border-radius: 24px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  padding: 14px;
+}
+
+html[data-theme="light"] .campaignListWrap{
+  background: rgba(255,255,255,.92);
+}
+
+.campaignListTop{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.campaignListTitle{ font-weight: 1000; }
+.campaignListSub{ color: var(--muted2); font-weight: 900; font-size: 12px; }
+
+.campaignList{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.campItem{
+  width:100%;
+  text-align:left;
+  border-radius: 20px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.10);
+  padding: 12px;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow2);
+}
+
+html[data-theme="light"] .campItem{
+  background: rgba(255,255,255,.96);
+}
+
+.campItem__top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.campItem__name{ font-weight: 1000; }
+.campItem__meta{ margin-top: 4px; color: var(--muted2); font-size: 12px; font-weight: 900; }
+
+.campItem__right{ text-align:right; }
+.campItem__tag{
+  display:inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.10);
+  font-weight: 1000;
+  font-size: 12px;
+}
+
+.campItem__actions{
+  margin-top: 10px;
+  display:flex;
+  gap: 10px;
+  justify-content:flex-end;
+}
+
+.campMini{
+  border-radius: 999px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.10);
+  color: var(--text);
+  padding: 9px 12px;
+  font-weight: 1000;
+  cursor:pointer;
+}
+
+.campMini--danger{
+  border-color: rgba(255,107,107,.30);
+  background: rgba(255,107,107,.10);
+}
+
+.campaignDetail{
+  margin-top: 12px;
+  display:none;
+  border-radius: 24px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  padding: 14px;
+}
+
+html[data-theme="light"] .campaignDetail{
+  background: rgba(255,255,255,.92);
+}
+
+.campaignDetail--on{ display:block; }
+
+.campaignDetail__top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.campaignDetail__title{ font-weight: 1100; font-size: 16px; }
+.campaignDetail__sub{ margin-top: 6px; color: var(--muted2); font-weight: 900; font-size: 12px; }
+
+.weekList{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.weekCard{
+  border-radius: 20px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.10);
+  padding: 12px;
+}
+
+html[data-theme="light"] .weekCard{
+  background: rgba(255,255,255,.96);
+}
+
+.weekCard__top{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.weekCard__label{ font-weight: 1000; }
+.weekCard__phase{ color: var(--muted2); font-weight: 1000; font-size: 12px; }
+
+.weekCard ul{
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.45;
+}
