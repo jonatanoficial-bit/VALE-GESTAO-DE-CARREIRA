@@ -1,232 +1,220 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#07070a" />
-  <title>Gerenciador de Carreira • Vale Produção</title>
-  <meta name="description" content="Diagnóstico premium de carreira musical com relatório, plano mensal e anual — por Vale Produção." />
-  <link rel="icon" href="assets/logo.png" />
-  <link rel="preload" href="css/styles.css" as="style" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <title>Vale Produção — Gerenciador de Carreira</title>
+  <meta name="description" content="Diagnóstico de carreira musical e plano de ação personalizado — Vale Produção." />
+  <link rel="icon" href="./assets/logo.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
-
 <body>
-  <div class="app" id="app">
-    <header class="topbar">
-      <div class="topbar__left">
-        <button class="icon-btn" id="btnBack" aria-label="Voltar" title="Voltar">
-          <span class="icon">←</span>
-        </button>
-      </div>
+  <div class="app">
 
-      <div class="topbar__center">
-        <div class="brand">
-          <img class="brand__logo" src="assets/logo.png" alt="Vale Produção" />
-          <div class="brand__text">
-            <div class="brand__title">Gerenciador de Carreira</div>
-            <div class="brand__subtitle">Relatório estratégico • Plano mensal e anual</div>
-          </div>
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar__brand">
+        <img class="brand__logo" src="./assets/logo.png" alt="Vale Produção" />
+        <div class="brand__text">
+          <div class="brand__title">Vale Produção</div>
+          <div class="brand__sub">Gerenciador de Carreira</div>
         </div>
       </div>
 
-      <div class="topbar__right">
-        <button class="icon-btn" id="btnTheme" aria-label="Alternar tema" title="Alternar tema">
+      <div class="topbar__actions">
+        <button id="btnTheme" class="iconbtn" aria-label="Alternar tema">
           <span class="icon">☾</span>
         </button>
+        <button id="btnBack" class="ghostbtn">Voltar</button>
       </div>
     </header>
 
-    <main class="main">
-      <!-- LANDING -->
-      <section class="screen screen--active" id="screenLanding" aria-labelledby="landingTitle">
+    <!-- Screens -->
+    <main class="screens">
+
+      <!-- Landing -->
+      <section id="screenLanding" class="screen screen--active">
         <div class="hero">
-          <div class="hero__logoWrap">
-            <img class="hero__logo" src="assets/logo.png" alt="Vale Produção" />
-            <div class="hero__glow" aria-hidden="true"></div>
-          </div>
+          <div class="hero__glow"></div>
+          <div class="hero__card">
+            <div class="hero__badge">Premium • AAA • Mobile-first</div>
+            <h1 class="hero__title">Relatório inteligente para sua carreira musical</h1>
+            <p class="hero__desc">
+              Responda algumas perguntas e receba um diagnóstico completo com
+              direcionamentos personalizados, cronograma mensal e anual, e um painel de métricas.
+            </p>
 
-          <h1 class="hero__title" id="landingTitle">Diagnóstico premium da sua carreira musical</h1>
-          <p class="hero__desc">
-            Responda perguntas rápidas e receba um relatório completo: status atual, direcionamentos personalizados,
-            checklist de execução, e cronogramas mensal e anual.
-          </p>
-
-          <div class="hero__cards">
-            <div class="card">
-              <div class="card__kicker">Algoritmos & Plataformas</div>
-              <div class="card__title">Spotify, YouTube, TikTok e distribuição</div>
-              <div class="card__desc">Ações práticas para aumentar streams, seguidores e conversão em fãs.</div>
+            <div class="hero__cta">
+              <button id="btnStart" class="btn btn--primary">Iniciar diagnóstico</button>
+              <button id="btnDemoFill" class="btn btn--ghost">Ver exemplo</button>
             </div>
-            <div class="card">
-              <div class="card__kicker">Marketing & Crescimento</div>
-              <div class="card__title">Plano de conteúdo e campanhas</div>
-              <div class="card__desc">Rotina de criação, anúncios, colabs e estratégia de lançamento.</div>
-            </div>
-            <div class="card">
-              <div class="card__kicker">Carreira & Negócio</div>
-              <div class="card__title">Shows, receita e operação</div>
-              <div class="card__desc">Organização, equipe, metas e expansão (Brasil + mundo).</div>
-            </div>
-          </div>
 
-          <div class="hero__cta">
-            <button class="btn btn--primary" id="btnStart">
-              <span>Iniciar diagnóstico</span>
-              <span class="btn__icon">→</span>
-            </button>
-            <button class="btn btn--ghost" id="btnDemoFill">Preencher com exemplo</button>
-          </div>
+            <div class="hero__meta">
+              <div class="metaItem">
+                <div class="metaItem__title">Foco</div>
+                <div class="metaItem__value">Crescimento real + monetização</div>
+              </div>
+              <div class="metaItem">
+                <div class="metaItem__title">Entrega</div>
+                <div class="metaItem__value">Plano 30 dias + 12 meses</div>
+              </div>
+              <div class="metaItem">
+                <div class="metaItem__title">Métricas</div>
+                <div class="metaItem__value">Insights + metas sugeridas</div>
+              </div>
+            </div>
 
-          <div class="fineprint">
-            <span class="pill">Mobile first</span>
-            <span class="pill">Relatório imprimível</span>
-            <span class="pill">Sem login (MVP)</span>
+            <div class="fineprint">
+              Criado por Jonatan Vale • Direitos Reservados — Vale Produção
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- WIZARD -->
-      <section class="screen" id="screenWizard" aria-labelledby="wizardTitle">
-        <div class="wizard">
-          <div class="wizard__top">
-            <div class="wizard__meta">
-              <h2 class="wizard__title" id="wizardTitle">Questionário</h2>
-              <div class="wizard__sub" id="wizardSub">Responda com sinceridade para recomendações mais precisas.</div>
-            </div>
-
+      <!-- Wizard -->
+      <section id="screenWizard" class="screen">
+        <div class="card">
+          <div class="card__header">
             <div class="progress">
-              <div class="progress__bar" aria-hidden="true">
-                <div class="progress__fill" id="progressFill"></div>
+              <div class="progress__track"><div id="progressFill" class="progress__fill"></div></div>
+              <div class="progress__meta">
+                <div id="progressLabel" class="progress__label">0%</div>
+                <div id="qCount" class="progress__count">1 / 1</div>
               </div>
-              <div class="progress__label" id="progressLabel">0%</div>
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel__head">
-              <div class="panel__section" id="qSection">—</div>
-              <div class="panel__count" id="qCount">—</div>
+          <div class="card__body">
+            <div class="qhead">
+              <div class="qhead__section" id="qSection">Seção</div>
+              <div class="qhead__title" id="qText">Pergunta</div>
+              <div class="qhead__help" id="qHelp"></div>
             </div>
 
-            <div class="panel__body">
-              <div class="question">
-                <div class="question__text" id="qText">—</div>
-                <div class="question__help" id="qHelp"></div>
-              </div>
-
-              <div class="answer" id="answerArea"></div>
-            </div>
-
-            <div class="panel__foot">
-              <button class="btn btn--ghost" id="btnPrev">Anterior</button>
-              <button class="btn btn--primary" id="btnNext">Próximo</button>
-            </div>
+            <div id="answerArea" class="answerArea"></div>
           </div>
 
-          <div class="wizard__bottom">
-            <button class="link" id="btnReset">Limpar respostas</button>
-            <span class="muted">As respostas ficam no seu dispositivo (localStorage).</span>
+          <div class="card__footer">
+            <button id="btnPrev" class="btn btn--ghost">Anterior</button>
+            <button id="btnNext" class="btn btn--primary">Próximo</button>
           </div>
         </div>
       </section>
 
-      <!-- REPORT -->
-      <section class="screen" id="screenReport" aria-labelledby="reportTitle">
+      <!-- Report -->
+      <section id="screenReport" class="screen">
         <div class="report">
-          <div class="report__head">
-            <div>
-              <h2 class="report__title" id="reportTitle">Relatório</h2>
-              <div class="report__subtitle" id="reportSubtitle">—</div>
+          <div class="report__top">
+            <div class="report__title">
+              <div class="report__h1">Relatório de Carreira</div>
+              <div id="reportSubtitle" class="report__sub">—</div>
             </div>
-
             <div class="report__actions">
-              <button class="btn btn--ghost" id="btnEdit">Editar respostas</button>
-              <button class="btn btn--primary" id="btnPrint">Imprimir / PDF</button>
+              <button id="btnEdit" class="btn btn--ghost">Editar respostas</button>
+              <button id="btnPrint" class="btn btn--primary">Imprimir / PDF</button>
             </div>
           </div>
 
+          <!-- Stage -->
           <div class="grid">
-            <div class="card card--metric">
-              <div class="metric">
-                <div class="metric__label">Estágio atual</div>
-                <div class="metric__value" id="stageLabel">—</div>
-                <div class="metric__hint" id="stageHint">—</div>
+            <div class="panel">
+              <div class="panel__kicker">Status</div>
+              <div id="stageLabel" class="panel__title">—</div>
+              <div id="stageHint" class="panel__desc">—</div>
+
+              <div class="score">
+                <div class="score__label">Score geral</div>
+                <div id="overallScore" class="score__value">0</div>
+                <div class="score__note">0–100 • Mais alto = mais pronto para escalar</div>
+              </div>
+
+              <div class="nextgoal">
+                <div class="nextgoal__label">Próxima meta recomendada</div>
+                <div id="nextGoal" class="nextgoal__value">—</div>
               </div>
             </div>
 
-            <div class="card card--metric">
-              <div class="metric">
-                <div class="metric__label">Score geral</div>
-                <div class="metric__value"><span id="overallScore">—</span><span class="metric__suffix">/100</span></div>
-                <div class="metric__hint">Diagnóstico por pilares</div>
+            <div class="panel">
+              <div class="panel__kicker">Pilares</div>
+              <div id="pillarChips" class="chips"></div>
+              <div id="pillarBars" class="bars"></div>
+            </div>
+          </div>
+
+          <!-- Analytics (NEW) -->
+          <div class="panel">
+            <div class="panel__kicker">Métricas & Analytics</div>
+            <div class="panel__title">Painel de performance</div>
+            <div class="panel__desc">
+              Baseado nas métricas informadas, o sistema gera insights e metas sugeridas para os próximos 30 dias.
+            </div>
+
+            <div id="analyticsCards" class="acards"></div>
+
+            <div class="agrid">
+              <div class="abox">
+                <div class="abox__title">Insights automáticos</div>
+                <ul id="analyticsInsights" class="alist"></ul>
+              </div>
+              <div class="abox">
+                <div class="abox__title">Metas sugeridas (30 dias)</div>
+                <ul id="analyticsGoals" class="alist"></ul>
               </div>
             </div>
+          </div>
 
-            <div class="card card--metric">
-              <div class="metric">
-                <div class="metric__label">Próxima meta</div>
-                <div class="metric__value" id="nextGoal">—</div>
-                <div class="metric__hint">Foco nas próximas 4 semanas</div>
+          <!-- Priorities -->
+          <div class="grid">
+            <div class="panel">
+              <div class="panel__kicker">Prioridades</div>
+              <div class="panel__title">Plano dos próximos 30 dias</div>
+              <ul id="priorities30" class="list"></ul>
+            </div>
+
+            <div class="panel">
+              <div class="panel__kicker">Checklist</div>
+              <div class="panel__title">Tarefas essenciais</div>
+              <ul id="checklist" class="checklist"></ul>
+              <div class="panel__actions">
+                <button id="btnReset" class="dangerbtn">Limpar respostas</button>
               </div>
             </div>
           </div>
 
-          <div class="card">
-            <div class="card__title">Mapa de pilares</div>
-            <div class="pillrow" id="pillarChips"></div>
-            <div class="bars" id="pillarBars"></div>
-          </div>
-
-          <div class="grid grid--2">
-            <div class="card">
-              <div class="card__title">Prioridades (30 dias)</div>
-              <ul class="list" id="priorities30"></ul>
+          <!-- Timelines -->
+          <div class="grid">
+            <div class="panel">
+              <div class="panel__kicker">Cronograma</div>
+              <div class="panel__title">Mensal (4 semanas)</div>
+              <div id="timelineMonth" class="timeline"></div>
             </div>
-
-            <div class="card">
-              <div class="card__title">Checklist de execução</div>
-              <ul class="checklist" id="checklist"></ul>
+            <div class="panel">
+              <div class="panel__kicker">Cronograma</div>
+              <div class="panel__title">Anual (12 meses)</div>
+              <div id="timelineYear" class="timeline"></div>
             </div>
           </div>
 
-          <div class="grid grid--2">
-            <div class="card">
-              <div class="card__title">Cronograma mensal (4 semanas)</div>
-              <div class="timeline" id="timelineMonth"></div>
-            </div>
-
-            <div class="card">
-              <div class="card__title">Cronograma anual (12 meses)</div>
-              <div class="timeline" id="timelineYear"></div>
-            </div>
+          <!-- Recommendations -->
+          <div class="panel">
+            <div class="panel__kicker">Direcionamentos</div>
+            <div class="panel__title">Recomendações personalizadas</div>
+            <div id="recommendations" class="recs"></div>
           </div>
 
-          <div class="card">
-            <div class="card__title">Recomendações personalizadas</div>
-            <div class="sections" id="recommendations"></div>
-          </div>
-
-          <footer class="footer">
-            <div class="footer__brand">
-              <img src="assets/logo.png" alt="Vale Produção" />
-              <div>
-                <div class="footer__title">Vale Produção</div>
-                <div class="footer__sub">Criado por Jonatan Vale • Direitos reservados</div>
-              </div>
-            </div>
-
-            <div class="footer__note">
-              Este relatório é orientativo. Resultados variam conforme consistência, qualidade artística, mercado e execução.
-            </div>
+          <footer class="report__footer">
+            Criado por Jonatan Vale • Direitos Reservados — Vale Produção
           </footer>
         </div>
       </section>
+
     </main>
 
-    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <!-- Toast -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   </div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
