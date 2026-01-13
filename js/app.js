@@ -5,6 +5,7 @@ import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 import { buildCompareUIData } from "./core/compare.js";
+import { buildCampaign, loadCampaigns, addCampaign, deleteCampaign, findCampaign } from "./core/campaigns.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -59,7 +60,7 @@ const analyticsGoals = document.getElementById("analyticsGoals");
 const historyListLanding = document.getElementById("historyListLanding");
 const historyListReport = document.getElementById("historyListReport");
 
-// Compare UI (NEW)
+// Compare UI
 const compareA = document.getElementById("compareA");
 const compareB = document.getElementById("compareB");
 const btnCompare = document.getElementById("btnCompare");
@@ -75,11 +76,24 @@ const sparkSf = document.getElementById("sparkSf");
 const compareInsights = document.getElementById("compareInsights");
 const compareActions = document.getElementById("compareActions");
 
+// Campaign UI (NEW)
+const campType = document.getElementById("campType");
+const campName = document.getElementById("campName");
+const campRelease = document.getElementById("campRelease");
+const campBudget = document.getElementById("campBudget");
+const campFocus = document.getElementById("campFocus");
+const btnBuildCampaign = document.getElementById("btnBuildCampaign");
+const btnSaveCampaign = document.getElementById("btnSaveCampaign");
+const btnExportCampaign = document.getElementById("btnExportCampaign");
+const campaignOutput = document.getElementById("campaignOutput");
+const campaignList = document.getElementById("campaignList");
+
 let state = {
   idx: 0,
   answers: loadAnswers(),
   lastScreen: "landing",
-  lastBuiltReport: null
+  lastBuiltReport: null,
+  currentCampaign: null
 };
 
 init();
@@ -91,6 +105,8 @@ function init(){
   btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
+  renderCampaignsList();
+  initCampaignDefaults();
 }
 
 function bind(){
@@ -123,8 +139,46 @@ function bind(){
     toast("Histórico removido.");
   });
 
-  btnCompare?.addEventListener("click", ()=>{
-    runCompare();
+  btnCompare?.addEventListener("click", runCompare);
+
+  // Campaign binds
+  btnBuildCampaign?.addEventListener("click", ()=>{
+    const payload = {
+      type: campType?.value || "single",
+      name: safeText(campName?.value || ""),
+      releaseDate: campRelease?.value || "",
+      budget: Number(campBudget?.value || 0),
+      focus: campFocus?.value || "streams"
+    };
+
+    const res = buildCampaign(payload);
+    if(!res.ok){
+      toast(res.error || "Erro ao gerar campanha.");
+      return;
+    }
+
+    state.currentCampaign = res.campaign;
+    renderCampaign(res.campaign);
+    toast("Campanha gerada.");
+  });
+
+  btnSaveCampaign?.addEventListener("click", ()=>{
+    if(!state.currentCampaign){
+      toast("Gere uma campanha antes.");
+      return;
+    }
+    addCampaign(state.currentCampaign);
+    renderCampaignsList();
+    toast("Campanha salva.");
+  });
+
+  btnExportCampaign?.addEventListener("click", ()=>{
+    if(!state.currentCampaign){
+      toast("Gere uma campanha antes.");
+      return;
+    }
+    downloadJSON(`vale-campanha-${slug(state.currentCampaign.name)}.json`, state.currentCampaign);
+    toast("Campanha exportada.");
   });
 
   window.addEventListener("keydown", (e)=>{
@@ -561,6 +615,7 @@ function openReportFromHistory(id){
   hydrateReportFromStored(r);
   showScreen("report");
   renderCompareSelects(true);
+  renderCampaignsList();
   toast("Relatório aberto do histórico.");
 }
 
@@ -659,6 +714,7 @@ function hydrateReportFromStored(fullReport){
   renderHistory();
 }
 
+// ===== Compare (Etapa 5) =====
 function renderCompareSelects(autoPick=false){
   if(!compareA || !compareB) return;
 
@@ -671,11 +727,15 @@ function renderCompareSelects(autoPick=false){
   compareA.innerHTML = "";
   compareB.innerHTML = "";
 
-  const empty = document.createElement("option");
-  empty.value = "";
-  empty.textContent = "Selecione…";
-  compareA.appendChild(empty.cloneNode(true));
-  compareB.appendChild(empty.cloneNode(true));
+  const emptyA = document.createElement("option");
+  emptyA.value = "";
+  emptyA.textContent = "Selecione…";
+  compareA.appendChild(emptyA);
+
+  const emptyB = document.createElement("option");
+  emptyB.value = "";
+  emptyB.textContent = "Selecione…";
+  compareB.appendChild(emptyB);
 
   opts.forEach(o=>{
     const a = document.createElement("option");
@@ -690,7 +750,6 @@ function renderCompareSelects(autoPick=false){
   });
 
   if(autoPick && reports.length >= 2){
-    // mais antigo x mais recente (para ver evolução real)
     const sorted = [...reports].sort((x,y)=> (x.createdAt||"").localeCompare(y.createdAt||""));
     compareA.value = sorted[0].id;
     compareB.value = sorted[sorted.length-1].id;
@@ -734,7 +793,6 @@ function runCompare(){
     return;
   }
 
-  // Cards
   cmpScore.textContent = `${String(data.cards.score.a)} → ${String(data.cards.score.b)}`;
   cmpMl.textContent = `${formatNumber(data.cards.ml.a)} → ${formatNumber(data.cards.ml.b)}`;
   cmpSf.textContent = `${formatNumber(data.cards.sf.a)} → ${formatNumber(data.cards.sf.b)}`;
@@ -748,12 +806,10 @@ function runCompare(){
   cmpSfDelta.textContent = data.cards.sf.delta.text;
   cmpSfDelta.className = data.cards.sf.delta.cls;
 
-  // Sparks
   sparkScore.innerHTML = data.sparks.score;
   sparkMl.innerHTML = data.sparks.ml;
   sparkSf.innerHTML = data.sparks.sf;
 
-  // Lists
   compareInsights.innerHTML = "";
   data.insights.forEach(t=>{
     const li = document.createElement("li");
@@ -771,6 +827,172 @@ function runCompare(){
   toast("Comparação atualizada.");
 }
 
+// ===== Campaigns (Etapa 6) =====
+function initCampaignDefaults(){
+  if(!campRelease) return;
+  // sugere data padrão: 21 dias à frente
+  const d = new Date();
+  d.setDate(d.getDate() + 21);
+  campRelease.value = d.toISOString().slice(0,10);
+}
+
+function renderCampaign(c){
+  if(!campaignOutput) return;
+
+  const plan = c.plan;
+  const tips = (plan.focusTips || []).map(t => `<li>${escapeHtml(t)}</li>`).join("");
+  const split = (plan.budgetSplit || []).map(x => `
+    <div class="budgetItem">
+      <div class="budgetItem__name">${escapeHtml(x.item)}</div>
+      <div class="budgetItem__meta">${x.pct}% • ${escapeHtml(x.note)} • <strong>R$ ${formatNumber(x.value)}</strong></div>
+    </div>
+  `).join("");
+
+  const weeks = (plan.weeks || []).map((w, idx)=>{
+    const goals = (w.goals || []).map(g => `<li>${escapeHtml(g)}</li>`).join("");
+    const checklist = (w.checklist || []).map((t, i)=>{
+      const key = ckKey(c.id, idx, i);
+      const checked = loadCheck(key) ? "checked" : "";
+      return `
+        <label class="ckItem">
+          <input type="checkbox" data-ck="${escapeHtml(key)}" ${checked}/>
+          <span>${escapeHtml(t)}</span>
+        </label>
+      `;
+    }).join("");
+
+    return `
+      <div class="weekCard">
+        <div class="weekTop">
+          <div class="weekTitle">${escapeHtml(w.label)}</div>
+          <div class="weekMeta">${escapeHtml(w.phase)} • ${escapeHtml(w.range)}</div>
+        </div>
+
+        <div class="weekCols">
+          <div class="weekBox">
+            <div class="weekBox__title">Metas</div>
+            <ul class="alist">${goals}</ul>
+          </div>
+          <div class="weekBox">
+            <div class="weekBox__title">Checklist (marque)</div>
+            <div class="ckList">${checklist}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  campaignOutput.innerHTML = `
+    <div class="campHeader">
+      <div class="campHeader__title">${escapeHtml(c.name)}</div>
+      <div class="campHeader__sub">${escapeHtml(c.type.toUpperCase())} • Lançamento: ${escapeHtml(c.releaseDate)} • Orçamento: R$ ${formatNumber(c.budget)} • Foco: ${escapeHtml(c.focus)}</div>
+    </div>
+
+    <div class="campGrid">
+      <div class="abox">
+        <div class="abox__title">Fases</div>
+        <ul class="alist">
+          ${(plan.phases || []).map(p=> `<li><strong>${escapeHtml(p.name)}:</strong> ${escapeHtml(p.range)}</li>`).join("")}
+        </ul>
+      </div>
+
+      <div class="abox">
+        <div class="abox__title">Dicas do foco</div>
+        <ul class="alist">${tips}</ul>
+      </div>
+
+      <div class="abox">
+        <div class="abox__title">Orçamento sugerido</div>
+        <div class="budgetList">${split}</div>
+      </div>
+    </div>
+
+    <div class="weeksWrap">
+      <div class="abox">
+        <div class="abox__title">Metas semanais + Checklist por fase</div>
+        <div class="weeks">${weeks}</div>
+      </div>
+    </div>
+  `;
+
+  // bind checkboxes
+  campaignOutput.querySelectorAll('input[type="checkbox"][data-ck]').forEach(inp=>{
+    inp.addEventListener("change", ()=>{
+      const key = inp.getAttribute("data-ck");
+      if(!key) return;
+      saveCheck(key, inp.checked);
+    });
+  });
+}
+
+function renderCampaignsList(){
+  if(!campaignList) return;
+  const arr = loadCampaigns();
+  if(arr.length === 0){
+    campaignList.innerHTML = `<div class="historyEmpty">Nenhuma campanha salva ainda.</div>`;
+    return;
+  }
+
+  campaignList.innerHTML = "";
+  arr.slice(0, 20).forEach(c=>{
+    const el = document.createElement("div");
+    el.className = "campSavedItem";
+    el.innerHTML = `
+      <button class="historyItem" type="button" data-open="${escapeHtml(c.id)}">
+        <div class="historyItem__left">
+          <div class="historyItem__title">${escapeHtml(c.name)}</div>
+          <div class="historyItem__sub">${escapeHtml((c.type||"").toUpperCase())} • ${escapeHtml(c.releaseDate||"")}</div>
+        </div>
+        <div class="historyItem__right">
+          <div class="historyItem__score">R$ ${formatNumber(c.budget||0)}</div>
+          <div class="historyItem__tag">${escapeHtml(c.focus||"")}</div>
+        </div>
+      </button>
+      <button class="miniDanger" data-del="${escapeHtml(c.id)}">Excluir</button>
+    `;
+    campaignList.appendChild(el);
+  });
+
+  campaignList.querySelectorAll("[data-open]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const id = b.getAttribute("data-open");
+      const c = findCampaign(id);
+      if(!c){ toast("Campanha não encontrada."); return; }
+      state.currentCampaign = c;
+      // Preenche form
+      if(campType) campType.value = c.type || "single";
+      if(campName) campName.value = c.name || "";
+      if(campRelease) campRelease.value = c.releaseDate || "";
+      if(campBudget) campBudget.value = String(c.budget || 0);
+      if(campFocus) campFocus.value = c.focus || "streams";
+      renderCampaign(c);
+      toast("Campanha aberta.");
+    });
+  });
+
+  campaignList.querySelectorAll("[data-del]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const id = b.getAttribute("data-del");
+      if(!confirm("Excluir esta campanha?")) return;
+      deleteCampaign(id);
+      renderCampaignsList();
+      toast("Campanha excluída.");
+    });
+  });
+}
+
+// Checklist persistence by campaign/week/task
+function ckKey(campId, weekIndex, taskIndex){
+  return `vale_ck_${campId}_${weekIndex}_${taskIndex}`;
+}
+function loadCheck(key){
+  try{ return localStorage.getItem(key) === "1"; }catch{ return false; }
+}
+function saveCheck(key, checked){
+  try{ localStorage.setItem(key, checked ? "1" : "0"); }catch{}
+}
+
+// ===== General =====
 function resetAll(){
   if(!confirm("Limpar todas as respostas deste dispositivo?")) return;
   state.answers = {};
@@ -847,4 +1069,13 @@ function slug(s){
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 48) || "relatorio";
+}
+
+function escapeHtml(s){
+  return safeText(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
