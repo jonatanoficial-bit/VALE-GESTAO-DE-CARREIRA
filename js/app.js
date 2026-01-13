@@ -1,8 +1,9 @@
 // js/app.js
 import { QUESTIONS } from "./data/questions.js";
 import { scoreAnswers, pillarMeta } from "./core/report.js";
-import { toast, safeText, formatNumber } from "./utils.js";
+import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
+import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -19,6 +20,8 @@ const btnReset = document.getElementById("btnReset");
 const btnEdit = document.getElementById("btnEdit");
 const btnPrint = document.getElementById("btnPrint");
 const btnTheme = document.getElementById("btnTheme");
+const btnExportJSON = document.getElementById("btnExportJSON");
+const btnClearHistory = document.getElementById("btnClearHistory");
 
 const qSection = document.getElementById("qSection");
 const qCount = document.getElementById("qCount");
@@ -30,10 +33,14 @@ const progressFill = document.getElementById("progressFill");
 const progressLabel = document.getElementById("progressLabel");
 
 const reportSubtitle = document.getElementById("reportSubtitle");
+const reportSubtitle2 = document.getElementById("reportSubtitle2");
 const stageLabel = document.getElementById("stageLabel");
+const stageLabel2 = document.getElementById("stageLabel2");
 const stageHint = document.getElementById("stageHint");
 const overallScore = document.getElementById("overallScore");
+const overallScore2 = document.getElementById("overallScore2");
 const nextGoal = document.getElementById("nextGoal");
+
 const pillarChips = document.getElementById("pillarChips");
 const pillarBars = document.getElementById("pillarBars");
 const priorities30 = document.getElementById("priorities30");
@@ -42,15 +49,20 @@ const timelineMonth = document.getElementById("timelineMonth");
 const timelineYear = document.getElementById("timelineYear");
 const recommendations = document.getElementById("recommendations");
 
-// Analytics UI (NEW)
+// Analytics UI
 const analyticsCards = document.getElementById("analyticsCards");
 const analyticsInsights = document.getElementById("analyticsInsights");
 const analyticsGoals = document.getElementById("analyticsGoals");
 
+// History UI
+const historyListLanding = document.getElementById("historyListLanding");
+const historyListReport = document.getElementById("historyListReport");
+
 let state = {
   idx: 0,
   answers: loadAnswers(),
-  lastScreen: "landing"
+  lastScreen: "landing",
+  lastBuiltReport: null
 };
 
 init();
@@ -60,6 +72,7 @@ function init(){
   applyTheme(loadTheme());
   showScreen("landing", false);
   btnBack.style.visibility = "hidden";
+  renderHistory();
 }
 
 function bind(){
@@ -70,8 +83,28 @@ function bind(){
   btnBack.addEventListener("click", handleBack);
   btnReset.addEventListener("click", resetAll);
   btnEdit.addEventListener("click", ()=> showScreen("wizard"));
-  btnPrint.addEventListener("click", ()=> window.print());
+  btnPrint.addEventListener("click", ()=> {
+    // A capa já está dentro do relatório, pronta pra PDF
+    window.print();
+  });
   btnTheme.addEventListener("click", toggleTheme);
+
+  btnExportJSON.addEventListener("click", ()=>{
+    if(!state.lastBuiltReport){
+      toast("Gere um relatório antes.");
+      return;
+    }
+    const name = safeText(state.lastBuiltReport.artistName || "relatorio");
+    downloadJSON(`vale-relatorio-${slug(name)}.json`, state.lastBuiltReport);
+    toast("JSON exportado.");
+  });
+
+  btnClearHistory?.addEventListener("click", ()=>{
+    if(!confirm("Deseja remover todo o histórico deste dispositivo?")) return;
+    clearReports();
+    renderHistory();
+    toast("Histórico removido.");
+  });
 
   window.addEventListener("keydown", (e)=>{
     if(state.lastScreen !== "wizard") return;
@@ -315,12 +348,20 @@ function buildReport(){
   const result = scoreAnswers(state.answers, QUESTIONS);
 
   const name = safeText(state.answers.artist_name || "Artista");
-  reportSubtitle.textContent = `Relatório gerado para ${name} • ${new Date().toLocaleString("pt-BR")}`;
+  const stamp = new Date().toLocaleString("pt-BR");
+  const subtitle = `Relatório gerado para ${name} • ${stamp}`;
 
+  // Cover
+  reportSubtitle.textContent = subtitle;
   stageLabel.textContent = result.stage.label;
-  stageHint.textContent = result.stage.hint;
   overallScore.textContent = String(result.overall);
   nextGoal.textContent = result.insights.nextGoal;
+
+  // Top (second)
+  reportSubtitle2.textContent = subtitle;
+  stageLabel2.textContent = result.stage.label;
+  stageHint.textContent = result.stage.hint;
+  overallScore2.textContent = String(result.overall);
 
   pillarChips.innerHTML = "";
   Object.entries(result.pillarScores).forEach(([p,val])=>{
@@ -344,7 +385,6 @@ function buildReport(){
     pillarBars.appendChild(bar);
   });
 
-  // Analytics (NEW)
   const analytics = buildAnalytics(state.answers);
   renderAnalytics(analytics);
 
@@ -399,11 +439,27 @@ function buildReport(){
     recommendations.appendChild(el);
   });
 
-  toast("Relatório gerado. Você pode imprimir em PDF.");
+  // Build exportable report object (full)
+  const fullReport = {
+    id: uid(),
+    createdAt: new Date().toISOString(),
+    createdAtLabel: stamp,
+    artistName: name,
+    answers: state.answers,
+    result,
+    analytics
+  };
+
+  state.lastBuiltReport = fullReport;
+
+  // Save to history
+  addReport(fullReport);
+  renderHistory();
+
+  toast("Relatório gerado e salvo no histórico.");
 }
 
 function renderAnalytics(a){
-  // Cards
   analyticsCards.innerHTML = "";
   a.cards.forEach(c=>{
     const el = document.createElement("div");
@@ -420,7 +476,6 @@ function renderAnalytics(a){
     analyticsCards.appendChild(el);
   });
 
-  // Insights
   analyticsInsights.innerHTML = "";
   a.insights.forEach(t=>{
     const li = document.createElement("li");
@@ -428,13 +483,162 @@ function renderAnalytics(a){
     analyticsInsights.appendChild(li);
   });
 
-  // Goals
   analyticsGoals.innerHTML = "";
   a.goals.forEach(t=>{
     const li = document.createElement("li");
     li.textContent = t;
     analyticsGoals.appendChild(li);
   });
+}
+
+function renderHistory(){
+  const reports = loadReports();
+
+  renderHistoryList(historyListLanding, reports, true);
+  renderHistoryList(historyListReport, reports, false);
+}
+
+function renderHistoryList(container, reports, isLanding){
+  if(!container) return;
+
+  if(!reports || reports.length === 0){
+    container.innerHTML = `<div class="historyEmpty">Ainda não há relatórios salvos.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  reports.slice(0, isLanding ? 6 : 30).forEach(r=>{
+    const el = document.createElement("button");
+    el.className = "historyItem";
+    el.type = "button";
+    el.innerHTML = `
+      <div class="historyItem__left">
+        <div class="historyItem__title">${safeText(r.artistName || "Artista")}</div>
+        <div class="historyItem__sub">${safeText(r.createdAtLabel || "")}</div>
+      </div>
+      <div class="historyItem__right">
+        <div class="historyItem__score">${String(r?.result?.overall ?? 0)}</div>
+        <div class="historyItem__tag">${safeText(r?.result?.stage?.label || "—")}</div>
+      </div>
+    `;
+
+    el.addEventListener("click", ()=>{
+      openReportFromHistory(r.id);
+    });
+
+    container.appendChild(el);
+  });
+}
+
+function openReportFromHistory(id){
+  const r = findReportById(id);
+  if(!r){
+    toast("Relatório não encontrado.");
+    return;
+  }
+  state.lastBuiltReport = r;
+  state.answers = r.answers || {};
+  saveAnswers(state.answers);
+
+  // Render UI from stored report
+  hydrateReportFromStored(r);
+  showScreen("report");
+  toast("Relatório aberto do histórico.");
+}
+
+function hydrateReportFromStored(fullReport){
+  const { result, analytics } = fullReport;
+  const name = safeText(fullReport.artistName || "Artista");
+  const stamp = safeText(fullReport.createdAtLabel || "");
+  const subtitle = `Relatório gerado para ${name} • ${stamp}`;
+
+  reportSubtitle.textContent = subtitle;
+  reportSubtitle2.textContent = subtitle;
+
+  stageLabel.textContent = result.stage.label;
+  stageLabel2.textContent = result.stage.label;
+  stageHint.textContent = result.stage.hint;
+
+  overallScore.textContent = String(result.overall);
+  overallScore2.textContent = String(result.overall);
+  nextGoal.textContent = result.insights.nextGoal;
+
+  pillarChips.innerHTML = "";
+  Object.entries(result.pillarScores).forEach(([p,val])=>{
+    const meta = pillarMeta(p);
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.innerHTML = `<strong>${meta.label}</strong> • ${val}/100`;
+    pillarChips.appendChild(chip);
+  });
+
+  pillarBars.innerHTML = "";
+  Object.entries(result.pillarScores).forEach(([p,val])=>{
+    const meta = pillarMeta(p);
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.innerHTML = `
+      <div class="bar__label">${meta.label}</div>
+      <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
+      <div class="bar__val">${val}</div>
+    `;
+    pillarBars.appendChild(bar);
+  });
+
+  renderAnalytics(analytics);
+
+  priorities30.innerHTML = "";
+  result.plans.priorities.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    priorities30.appendChild(li);
+  });
+
+  checklist.innerHTML = "";
+  result.plans.checklist.forEach(t=>{
+    const li = document.createElement("li");
+    li.className = "check";
+    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${t}</div>`;
+    checklist.appendChild(li);
+  });
+
+  timelineMonth.innerHTML = "";
+  result.plans.month.forEach(item=>{
+    const el = document.createElement("div");
+    el.className = "titem";
+    el.innerHTML = `
+      <div class="titem__top">
+        <div class="titem__label">${item.label}</div>
+        <div class="titem__when">${item.when}</div>
+      </div>
+      <div class="titem__desc">${item.desc}</div>
+    `;
+    timelineMonth.appendChild(el);
+  });
+
+  timelineYear.innerHTML = "";
+  result.plans.year.forEach(item=>{
+    const el = document.createElement("div");
+    el.className = "titem";
+    el.innerHTML = `
+      <div class="titem__top">
+        <div class="titem__label">${item.label}</div>
+        <div class="titem__when">${item.when}</div>
+      </div>
+      <div class="titem__desc">${item.desc}</div>
+    `;
+    timelineYear.appendChild(el);
+  });
+
+  recommendations.innerHTML = "";
+  result.plans.recs.forEach(r=>{
+    const el = document.createElement("div");
+    el.className = "rec";
+    el.innerHTML = `<div class="rec__title">${r.title}</div><div class="rec__body">${r.body}</div>`;
+    recommendations.appendChild(el);
+  });
+
+  renderHistory();
 }
 
 function resetAll(){
@@ -506,12 +710,11 @@ function toggleTheme(){
   toast("Tema atualizado.");
 }
 
-function handleBack(){
-  if(state.lastScreen === "wizard"){
-    showScreen("landing");
-  }else if(state.lastScreen === "report"){
-    showScreen("wizard");
-  }else{
-    showScreen("landing");
-  }
+function slug(s){
+  return safeText(s)
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "relatorio";
 }
