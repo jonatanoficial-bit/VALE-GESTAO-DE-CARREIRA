@@ -1,7 +1,8 @@
 // js/app.js
 import { QUESTIONS } from "./data/questions.js";
 import { scoreAnswers, pillarMeta } from "./core/report.js";
-import { toast, safeText } from "./utils.js";
+import { toast, safeText, formatNumber } from "./utils.js";
+import { buildAnalytics } from "./core/analytics.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -40,6 +41,11 @@ const checklist = document.getElementById("checklist");
 const timelineMonth = document.getElementById("timelineMonth");
 const timelineYear = document.getElementById("timelineYear");
 const recommendations = document.getElementById("recommendations");
+
+// Analytics UI (NEW)
+const analyticsCards = document.getElementById("analyticsCards");
+const analyticsInsights = document.getElementById("analyticsInsights");
+const analyticsGoals = document.getElementById("analyticsGoals");
 
 let state = {
   idx: 0,
@@ -290,7 +296,7 @@ function renderNumber(q){
     <label>Digite um número</label>
     <div class="numrow">
       <input class="numrow__input" type="number" inputmode="numeric" min="${min}" max="${max}" step="${step}" />
-      <div class="numrow__hint">min ${min.toLocaleString("pt-BR")} • máx ${max.toLocaleString("pt-BR")}</div>
+      <div class="numrow__hint">min ${formatNumber(min)} • máx ${formatNumber(max)}</div>
     </div>
   `;
   const input = wrap.querySelector("input");
@@ -337,6 +343,10 @@ function buildReport(){
     `;
     pillarBars.appendChild(bar);
   });
+
+  // Analytics (NEW)
+  const analytics = buildAnalytics(state.answers);
+  renderAnalytics(analytics);
 
   priorities30.innerHTML = "";
   result.plans.priorities.forEach(t=>{
@@ -390,6 +400,41 @@ function buildReport(){
   });
 
   toast("Relatório gerado. Você pode imprimir em PDF.");
+}
+
+function renderAnalytics(a){
+  // Cards
+  analyticsCards.innerHTML = "";
+  a.cards.forEach(c=>{
+    const el = document.createElement("div");
+    el.className = "acard";
+    el.innerHTML = `
+      <div class="acard__top">
+        <div class="acard__name">${c.name}</div>
+        <div class="acard__tag ${c.tagType}">${c.tag}</div>
+      </div>
+      <div class="acard__val">${c.value}</div>
+      <div class="acard__sub">${c.sub}</div>
+      <div class="acard__meter"><div class="acard__fill" style="width:${c.pct}%"></div></div>
+    `;
+    analyticsCards.appendChild(el);
+  });
+
+  // Insights
+  analyticsInsights.innerHTML = "";
+  a.insights.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    analyticsInsights.appendChild(li);
+  });
+
+  // Goals
+  analyticsGoals.innerHTML = "";
+  a.goals.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    analyticsGoals.appendChild(li);
+  });
 }
 
 function resetAll(){
@@ -459,4 +504,14 @@ function toggleTheme(){
   const cur = document.documentElement.getAttribute("data-theme") || "dark";
   applyTheme(cur === "dark" ? "light" : "dark");
   toast("Tema atualizado.");
+}
+
+function handleBack(){
+  if(state.lastScreen === "wizard"){
+    showScreen("landing");
+  }else if(state.lastScreen === "report"){
+    showScreen("wizard");
+  }else{
+    showScreen("landing");
+  }
 }
