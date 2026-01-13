@@ -5,7 +5,6 @@ import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 import { buildCompareUIData } from "./core/compare.js";
-import { buildCampaign, loadCampaigns, addCampaign, deleteCampaign, findCampaign } from "./core/campaigns.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -51,16 +50,13 @@ const timelineMonth = document.getElementById("timelineMonth");
 const timelineYear = document.getElementById("timelineYear");
 const recommendations = document.getElementById("recommendations");
 
-// Analytics UI
 const analyticsCards = document.getElementById("analyticsCards");
 const analyticsInsights = document.getElementById("analyticsInsights");
 const analyticsGoals = document.getElementById("analyticsGoals");
 
-// History UI
 const historyListLanding = document.getElementById("historyListLanding");
 const historyListReport = document.getElementById("historyListReport");
 
-// Compare UI
 const compareA = document.getElementById("compareA");
 const compareB = document.getElementById("compareB");
 const btnCompare = document.getElementById("btnCompare");
@@ -76,24 +72,11 @@ const sparkSf = document.getElementById("sparkSf");
 const compareInsights = document.getElementById("compareInsights");
 const compareActions = document.getElementById("compareActions");
 
-// Campaign UI (NEW)
-const campType = document.getElementById("campType");
-const campName = document.getElementById("campName");
-const campRelease = document.getElementById("campRelease");
-const campBudget = document.getElementById("campBudget");
-const campFocus = document.getElementById("campFocus");
-const btnBuildCampaign = document.getElementById("btnBuildCampaign");
-const btnSaveCampaign = document.getElementById("btnSaveCampaign");
-const btnExportCampaign = document.getElementById("btnExportCampaign");
-const campaignOutput = document.getElementById("campaignOutput");
-const campaignList = document.getElementById("campaignList");
-
 let state = {
   idx: 0,
   answers: loadAnswers(),
   lastScreen: "landing",
-  lastBuiltReport: null,
-  currentCampaign: null
+  lastBuiltReport: null
 };
 
 init();
@@ -105,8 +88,6 @@ function init(){
   btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
-  renderCampaignsList();
-  initCampaignDefaults();
 }
 
 function bind(){
@@ -121,10 +102,7 @@ function bind(){
   btnTheme.addEventListener("click", toggleTheme);
 
   btnExportJSON?.addEventListener("click", ()=>{
-    if(!state.lastBuiltReport){
-      toast("Gere um relatório antes.");
-      return;
-    }
+    if(!state.lastBuiltReport){ toast("Gere um relatório antes."); return; }
     const name = safeText(state.lastBuiltReport.artistName || "relatorio");
     downloadJSON(`vale-relatorio-${slug(name)}.json`, state.lastBuiltReport);
     toast("JSON exportado.");
@@ -141,51 +119,11 @@ function bind(){
 
   btnCompare?.addEventListener("click", runCompare);
 
-  // Campaign binds
-  btnBuildCampaign?.addEventListener("click", ()=>{
-    const payload = {
-      type: campType?.value || "single",
-      name: safeText(campName?.value || ""),
-      releaseDate: campRelease?.value || "",
-      budget: Number(campBudget?.value || 0),
-      focus: campFocus?.value || "streams"
-    };
-
-    const res = buildCampaign(payload);
-    if(!res.ok){
-      toast(res.error || "Erro ao gerar campanha.");
-      return;
-    }
-
-    state.currentCampaign = res.campaign;
-    renderCampaign(res.campaign);
-    toast("Campanha gerada.");
-  });
-
-  btnSaveCampaign?.addEventListener("click", ()=>{
-    if(!state.currentCampaign){
-      toast("Gere uma campanha antes.");
-      return;
-    }
-    addCampaign(state.currentCampaign);
-    renderCampaignsList();
-    toast("Campanha salva.");
-  });
-
-  btnExportCampaign?.addEventListener("click", ()=>{
-    if(!state.currentCampaign){
-      toast("Gere uma campanha antes.");
-      return;
-    }
-    downloadJSON(`vale-campanha-${slug(state.currentCampaign.name)}.json`, state.currentCampaign);
-    toast("Campanha exportada.");
-  });
-
   window.addEventListener("keydown", (e)=>{
     if(state.lastScreen !== "wizard") return;
     if(e.key === "Enter" && !e.shiftKey){
       const active = document.activeElement;
-      if(active && (active.tagName === "TEXTAREA")) return;
+      if(active && active.tagName === "TEXTAREA") return;
       e.preventDefault();
       nextQ();
     }
@@ -196,12 +134,8 @@ function showScreen(name, pushHistory=true){
   Object.values(screens).forEach(s=> s.classList.remove("screen--active"));
   screens[name].classList.add("screen--active");
   state.lastScreen = name;
-
   btnBack.style.visibility = (name === "landing") ? "hidden" : "visible";
-
-  if(pushHistory){
-    history.pushState({screen:name}, "");
-  }
+  if(pushHistory) history.pushState({screen:name}, "");
 }
 
 window.addEventListener("popstate", (e)=>{
@@ -213,13 +147,9 @@ window.addEventListener("popstate", (e)=>{
 });
 
 function handleBack(){
-  if(state.lastScreen === "wizard"){
-    showScreen("landing");
-  }else if(state.lastScreen === "report"){
-    showScreen("wizard");
-  }else{
-    showScreen("landing");
-  }
+  if(state.lastScreen === "wizard") showScreen("landing");
+  else if(state.lastScreen === "report") showScreen("wizard");
+  else showScreen("landing");
 }
 
 function startWizard(withDemo){
@@ -237,25 +167,17 @@ function firstUnansweredIndex(){
   for(let i=0;i<QUESTIONS.length;i++){
     const q = QUESTIONS[i];
     const a = state.answers[q.id];
-    if(a == null || a === "" || (Array.isArray(a) && a.length===0)){
-      return i;
-    }
+    if(a == null || a === "" || (Array.isArray(a) && a.length===0)) return i;
   }
   return 0;
 }
 
-function prevQ(){
-  state.idx = Math.max(0, state.idx - 1);
-  renderQuestion();
-}
+function prevQ(){ state.idx = Math.max(0, state.idx - 1); renderQuestion(); }
 
 function nextQ(){
   const q = QUESTIONS[state.idx];
   const ok = validateCurrent(q);
-  if(!ok){
-    toast("Escolha uma opção ou preencha o campo para continuar.");
-    return;
-  }
+  if(!ok){ toast("Escolha uma opção ou preencha o campo para continuar."); return; }
 
   saveAnswers(state.answers);
 
@@ -270,18 +192,10 @@ function nextQ(){
 
 function validateCurrent(q){
   const a = state.answers[q.id];
-  if(q.type === "text" || q.type === "textarea"){
-    return (typeof a === "string" && safeText(a).length > 0);
-  }
-  if(q.type === "single"){
-    return typeof a === "string" && a.length > 0;
-  }
-  if(q.type === "multi"){
-    return Array.isArray(a) && a.length > 0;
-  }
-  if(q.type === "number"){
-    return (typeof a === "number" && Number.isFinite(a) && a >= (q.min ?? 0));
-  }
+  if(q.type === "text" || q.type === "textarea") return (typeof a === "string" && safeText(a).length > 0);
+  if(q.type === "single") return typeof a === "string" && a.length > 0;
+  if(q.type === "multi") return Array.isArray(a) && a.length > 0;
+  if(q.type === "number") return (typeof a === "number" && Number.isFinite(a) && a >= (q.min ?? 0));
   return true;
 }
 
@@ -301,17 +215,11 @@ function renderQuestion(){
   btnPrev.style.opacity = btnPrev.disabled ? ".55" : "1";
 
   answerArea.innerHTML = "";
-  if(q.type === "single"){
-    renderSingle(q);
-  }else if(q.type === "multi"){
-    renderMulti(q);
-  }else if(q.type === "textarea"){
-    renderTextarea(q);
-  }else if(q.type === "number"){
-    renderNumber(q);
-  }else{
-    renderText(q);
-  }
+  if(q.type === "single") renderSingle(q);
+  else if(q.type === "multi") renderMulti(q);
+  else if(q.type === "textarea") renderTextarea(q);
+  else if(q.type === "number") renderNumber(q);
+  else renderText(q);
 
   btnNext.textContent = (state.idx === QUESTIONS.length - 1) ? "Gerar relatório" : "Próximo";
 }
@@ -324,8 +232,8 @@ function renderSingle(q){
     el.innerHTML = `
       <div class="choice__dot" aria-hidden="true"></div>
       <div class="choice__meta">
-        <div class="choice__title">${opt.label}</div>
-        ${opt.desc ? `<div class="choice__desc">${opt.desc}</div>` : ""}
+        <div class="choice__title">${escapeHtml(opt.label)}</div>
+        ${opt.desc ? `<div class="choice__desc">${escapeHtml(opt.desc)}</div>` : ""}
       </div>
     `;
     el.addEventListener("click", ()=>{
@@ -345,17 +253,13 @@ function renderMulti(q){
     el.innerHTML = `
       <div class="choice__dot" aria-hidden="true"></div>
       <div class="choice__meta">
-        <div class="choice__title">${opt.label}</div>
+        <div class="choice__title">${escapeHtml(opt.label)}</div>
       </div>
     `;
     el.addEventListener("click", ()=>{
       let next = Array.isArray(state.answers[q.id]) ? [...state.answers[q.id]] : [];
-      if(next.includes(opt.value)){
-        next = next.filter(v=>v!==opt.value);
-      }else{
-        if(opt.value === "nenhuma") next = ["nenhuma"];
-        else next = next.filter(v=>v!=="nenhuma").concat(opt.value);
-      }
+      if(next.includes(opt.value)) next = next.filter(v=>v!==opt.value);
+      else next = next.concat(opt.value);
       state.answers[q.id] = next;
       renderQuestion();
     });
@@ -421,7 +325,6 @@ function renderNumber(q){
 
 function buildReport(){
   const result = scoreAnswers(state.answers, QUESTIONS);
-
   const name = safeText(state.answers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
@@ -442,7 +345,7 @@ function buildReport(){
     const meta = pillarMeta(p);
     const chip = document.createElement("div");
     chip.className = "chip";
-    chip.innerHTML = `<strong>${meta.label}</strong> • ${val}/100`;
+    chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
     pillarChips.appendChild(chip);
   });
 
@@ -452,7 +355,7 @@ function buildReport(){
     const bar = document.createElement("div");
     bar.className = "bar";
     bar.innerHTML = `
-      <div class="bar__label">${meta.label}</div>
+      <div class="bar__label">${escapeHtml(meta.label)}</div>
       <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
       <div class="bar__val">${val}</div>
     `;
@@ -473,7 +376,7 @@ function buildReport(){
   result.plans.checklist.forEach(t=>{
     const li = document.createElement("li");
     li.className = "check";
-    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${t}</div>`;
+    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
     checklist.appendChild(li);
   });
 
@@ -483,10 +386,10 @@ function buildReport(){
     el.className = "titem";
     el.innerHTML = `
       <div class="titem__top">
-        <div class="titem__label">${item.label}</div>
-        <div class="titem__when">${item.when}</div>
+        <div class="titem__label">${escapeHtml(item.label)}</div>
+        <div class="titem__when">${escapeHtml(item.when)}</div>
       </div>
-      <div class="titem__desc">${item.desc}</div>
+      <div class="titem__desc">${escapeHtml(item.desc)}</div>
     `;
     timelineMonth.appendChild(el);
   });
@@ -497,10 +400,10 @@ function buildReport(){
     el.className = "titem";
     el.innerHTML = `
       <div class="titem__top">
-        <div class="titem__label">${item.label}</div>
-        <div class="titem__when">${item.when}</div>
+        <div class="titem__label">${escapeHtml(item.label)}</div>
+        <div class="titem__when">${escapeHtml(item.when)}</div>
       </div>
-      <div class="titem__desc">${item.desc}</div>
+      <div class="titem__desc">${escapeHtml(item.desc)}</div>
     `;
     timelineYear.appendChild(el);
   });
@@ -509,7 +412,7 @@ function buildReport(){
   result.plans.recs.forEach(r=>{
     const el = document.createElement("div");
     el.className = "rec";
-    el.innerHTML = `<div class="rec__title">${r.title}</div><div class="rec__body">${r.body}</div>`;
+    el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
     recommendations.appendChild(el);
   });
 
@@ -524,11 +427,9 @@ function buildReport(){
   };
 
   state.lastBuiltReport = fullReport;
-
   addReport(fullReport);
   renderHistory();
   renderCompareSelects(true);
-
   toast("Relatório gerado e salvo no histórico.");
 }
 
@@ -539,11 +440,11 @@ function renderAnalytics(a){
     el.className = "acard";
     el.innerHTML = `
       <div class="acard__top">
-        <div class="acard__name">${c.name}</div>
-        <div class="acard__tag ${c.tagType}">${c.tag}</div>
+        <div class="acard__name">${escapeHtml(c.name)}</div>
+        <div class="acard__tag ${escapeHtml(c.tagType)}">${escapeHtml(c.tag)}</div>
       </div>
-      <div class="acard__val">${c.value}</div>
-      <div class="acard__sub">${c.sub}</div>
+      <div class="acard__val">${escapeHtml(c.value)}</div>
+      <div class="acard__sub">${escapeHtml(c.sub)}</div>
       <div class="acard__meter"><div class="acard__fill" style="width:${c.pct}%"></div></div>
     `;
     analyticsCards.appendChild(el);
@@ -585,42 +486,39 @@ function renderHistoryList(container, reports, isLanding){
     el.type = "button";
     el.innerHTML = `
       <div class="historyItem__left">
-        <div class="historyItem__title">${safeText(r.artistName || "Artista")}</div>
-        <div class="historyItem__sub">${safeText(r.createdAtLabel || "")}</div>
+        <div class="historyItem__title">${escapeHtml(safeText(r.artistName || "Artista"))}</div>
+        <div class="historyItem__sub">${escapeHtml(safeText(r.createdAtLabel || ""))}</div>
       </div>
       <div class="historyItem__right">
         <div class="historyItem__score">${String(r?.result?.overall ?? 0)}</div>
-        <div class="historyItem__tag">${safeText(r?.result?.stage?.label || "—")}</div>
+        <div class="historyItem__tag">${escapeHtml(safeText(r?.result?.stage?.label || "—"))}</div>
       </div>
     `;
-
-    el.addEventListener("click", ()=>{
-      openReportFromHistory(r.id);
-    });
-
+    el.addEventListener("click", ()=> openReportFromHistory(r.id));
     container.appendChild(el);
   });
 }
 
 function openReportFromHistory(id){
   const r = findReportById(id);
-  if(!r){
-    toast("Relatório não encontrado.");
-    return;
-  }
+  if(!r){ toast("Relatório não encontrado."); return; }
   state.lastBuiltReport = r;
   state.answers = r.answers || {};
   saveAnswers(state.answers);
-
-  hydrateReportFromStored(r);
+  buildReportFromStored(r);
   showScreen("report");
   renderCompareSelects(true);
-  renderCampaignsList();
   toast("Relatório aberto do histórico.");
 }
 
-function hydrateReportFromStored(fullReport){
-  const { result, analytics } = fullReport;
+function buildReportFromStored(fullReport){
+  state.answers = fullReport.answers || {};
+  saveAnswers(state.answers);
+  state.lastBuiltReport = fullReport;
+  // reconstruir UI com mesmos dados
+  const result = fullReport.result;
+  const analytics = fullReport.analytics;
+
   const name = safeText(fullReport.artistName || "Artista");
   const stamp = safeText(fullReport.createdAtLabel || "");
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
@@ -641,7 +539,7 @@ function hydrateReportFromStored(fullReport){
     const meta = pillarMeta(p);
     const chip = document.createElement("div");
     chip.className = "chip";
-    chip.innerHTML = `<strong>${meta.label}</strong> • ${val}/100`;
+    chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
     pillarChips.appendChild(chip);
   });
 
@@ -651,7 +549,7 @@ function hydrateReportFromStored(fullReport){
     const bar = document.createElement("div");
     bar.className = "bar";
     bar.innerHTML = `
-      <div class="bar__label">${meta.label}</div>
+      <div class="bar__label">${escapeHtml(meta.label)}</div>
       <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
       <div class="bar__val">${val}</div>
     `;
@@ -671,7 +569,7 @@ function hydrateReportFromStored(fullReport){
   result.plans.checklist.forEach(t=>{
     const li = document.createElement("li");
     li.className = "check";
-    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${t}</div>`;
+    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
     checklist.appendChild(li);
   });
 
@@ -681,10 +579,10 @@ function hydrateReportFromStored(fullReport){
     el.className = "titem";
     el.innerHTML = `
       <div class="titem__top">
-        <div class="titem__label">${item.label}</div>
-        <div class="titem__when">${item.when}</div>
+        <div class="titem__label">${escapeHtml(item.label)}</div>
+        <div class="titem__when">${escapeHtml(item.when)}</div>
       </div>
-      <div class="titem__desc">${item.desc}</div>
+      <div class="titem__desc">${escapeHtml(item.desc)}</div>
     `;
     timelineMonth.appendChild(el);
   });
@@ -695,10 +593,10 @@ function hydrateReportFromStored(fullReport){
     el.className = "titem";
     el.innerHTML = `
       <div class="titem__top">
-        <div class="titem__label">${item.label}</div>
-        <div class="titem__when">${item.when}</div>
+        <div class="titem__label">${escapeHtml(item.label)}</div>
+        <div class="titem__when">${escapeHtml(item.when)}</div>
       </div>
-      <div class="titem__desc">${item.desc}</div>
+      <div class="titem__desc">${escapeHtml(item.desc)}</div>
     `;
     timelineYear.appendChild(el);
   });
@@ -707,52 +605,39 @@ function hydrateReportFromStored(fullReport){
   result.plans.recs.forEach(r=>{
     const el = document.createElement("div");
     el.className = "rec";
-    el.innerHTML = `<div class="rec__title">${r.title}</div><div class="rec__body">${r.body}</div>`;
+    el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
     recommendations.appendChild(el);
   });
 
   renderHistory();
 }
 
-// ===== Compare (Etapa 5) =====
+// Compare
 function renderCompareSelects(autoPick=false){
   if(!compareA || !compareB) return;
-
   const reports = loadReports();
-  const opts = reports.map(r => ({
-    id: r.id,
-    label: `${safeText(r.artistName || "Artista")} • ${safeText(r.createdAtLabel || "")} • Score ${String(r?.result?.overall ?? 0)}`
-  }));
+
+  const makeOpt = (id, label)=>{
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = label;
+    return o;
+  };
 
   compareA.innerHTML = "";
   compareB.innerHTML = "";
+  compareA.appendChild(makeOpt("", "Selecione…"));
+  compareB.appendChild(makeOpt("", "Selecione…"));
 
-  const emptyA = document.createElement("option");
-  emptyA.value = "";
-  emptyA.textContent = "Selecione…";
-  compareA.appendChild(emptyA);
-
-  const emptyB = document.createElement("option");
-  emptyB.value = "";
-  emptyB.textContent = "Selecione…";
-  compareB.appendChild(emptyB);
-
-  opts.forEach(o=>{
-    const a = document.createElement("option");
-    a.value = o.id;
-    a.textContent = o.label;
-    compareA.appendChild(a);
-
-    const b = document.createElement("option");
-    b.value = o.id;
-    b.textContent = o.label;
-    compareB.appendChild(b);
+  reports.forEach(r=>{
+    const label = `${safeText(r.artistName||"Artista")} • ${safeText(r.createdAtLabel||"")} • Score ${String(r?.result?.overall ?? 0)}`;
+    compareA.appendChild(makeOpt(r.id, label));
+    compareB.appendChild(makeOpt(r.id, label));
   });
 
   if(autoPick && reports.length >= 2){
-    const sorted = [...reports].sort((x,y)=> (x.createdAt||"").localeCompare(y.createdAt||""));
-    compareA.value = sorted[0].id;
-    compareB.value = sorted[sorted.length-1].id;
+    compareA.value = reports[reports.length-2].id;
+    compareB.value = reports[reports.length-1].id;
     runCompare();
   }else{
     clearCompareView();
@@ -778,20 +663,11 @@ function runCompare(){
   const idB = compareB?.value || "";
   const reports = loadReports();
 
-  if(!idA || !idB){
-    toast("Selecione Relatório A e B.");
-    return;
-  }
-  if(idA === idB){
-    toast("Escolha relatórios diferentes.");
-    return;
-  }
+  if(!idA || !idB){ toast("Selecione Relatório A e B."); return; }
+  if(idA === idB){ toast("Escolha relatórios diferentes."); return; }
 
   const data = buildCompareUIData(reports, idA, idB);
-  if(!data.ok){
-    toast(data.message || "Não foi possível comparar.");
-    return;
-  }
+  if(!data.ok){ toast(data.message || "Não foi possível comparar."); return; }
 
   cmpScore.textContent = `${String(data.cards.score.a)} → ${String(data.cards.score.b)}`;
   cmpMl.textContent = `${formatNumber(data.cards.ml.a)} → ${formatNumber(data.cards.ml.b)}`;
@@ -827,172 +703,6 @@ function runCompare(){
   toast("Comparação atualizada.");
 }
 
-// ===== Campaigns (Etapa 6) =====
-function initCampaignDefaults(){
-  if(!campRelease) return;
-  // sugere data padrão: 21 dias à frente
-  const d = new Date();
-  d.setDate(d.getDate() + 21);
-  campRelease.value = d.toISOString().slice(0,10);
-}
-
-function renderCampaign(c){
-  if(!campaignOutput) return;
-
-  const plan = c.plan;
-  const tips = (plan.focusTips || []).map(t => `<li>${escapeHtml(t)}</li>`).join("");
-  const split = (plan.budgetSplit || []).map(x => `
-    <div class="budgetItem">
-      <div class="budgetItem__name">${escapeHtml(x.item)}</div>
-      <div class="budgetItem__meta">${x.pct}% • ${escapeHtml(x.note)} • <strong>R$ ${formatNumber(x.value)}</strong></div>
-    </div>
-  `).join("");
-
-  const weeks = (plan.weeks || []).map((w, idx)=>{
-    const goals = (w.goals || []).map(g => `<li>${escapeHtml(g)}</li>`).join("");
-    const checklist = (w.checklist || []).map((t, i)=>{
-      const key = ckKey(c.id, idx, i);
-      const checked = loadCheck(key) ? "checked" : "";
-      return `
-        <label class="ckItem">
-          <input type="checkbox" data-ck="${escapeHtml(key)}" ${checked}/>
-          <span>${escapeHtml(t)}</span>
-        </label>
-      `;
-    }).join("");
-
-    return `
-      <div class="weekCard">
-        <div class="weekTop">
-          <div class="weekTitle">${escapeHtml(w.label)}</div>
-          <div class="weekMeta">${escapeHtml(w.phase)} • ${escapeHtml(w.range)}</div>
-        </div>
-
-        <div class="weekCols">
-          <div class="weekBox">
-            <div class="weekBox__title">Metas</div>
-            <ul class="alist">${goals}</ul>
-          </div>
-          <div class="weekBox">
-            <div class="weekBox__title">Checklist (marque)</div>
-            <div class="ckList">${checklist}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  campaignOutput.innerHTML = `
-    <div class="campHeader">
-      <div class="campHeader__title">${escapeHtml(c.name)}</div>
-      <div class="campHeader__sub">${escapeHtml(c.type.toUpperCase())} • Lançamento: ${escapeHtml(c.releaseDate)} • Orçamento: R$ ${formatNumber(c.budget)} • Foco: ${escapeHtml(c.focus)}</div>
-    </div>
-
-    <div class="campGrid">
-      <div class="abox">
-        <div class="abox__title">Fases</div>
-        <ul class="alist">
-          ${(plan.phases || []).map(p=> `<li><strong>${escapeHtml(p.name)}:</strong> ${escapeHtml(p.range)}</li>`).join("")}
-        </ul>
-      </div>
-
-      <div class="abox">
-        <div class="abox__title">Dicas do foco</div>
-        <ul class="alist">${tips}</ul>
-      </div>
-
-      <div class="abox">
-        <div class="abox__title">Orçamento sugerido</div>
-        <div class="budgetList">${split}</div>
-      </div>
-    </div>
-
-    <div class="weeksWrap">
-      <div class="abox">
-        <div class="abox__title">Metas semanais + Checklist por fase</div>
-        <div class="weeks">${weeks}</div>
-      </div>
-    </div>
-  `;
-
-  // bind checkboxes
-  campaignOutput.querySelectorAll('input[type="checkbox"][data-ck]').forEach(inp=>{
-    inp.addEventListener("change", ()=>{
-      const key = inp.getAttribute("data-ck");
-      if(!key) return;
-      saveCheck(key, inp.checked);
-    });
-  });
-}
-
-function renderCampaignsList(){
-  if(!campaignList) return;
-  const arr = loadCampaigns();
-  if(arr.length === 0){
-    campaignList.innerHTML = `<div class="historyEmpty">Nenhuma campanha salva ainda.</div>`;
-    return;
-  }
-
-  campaignList.innerHTML = "";
-  arr.slice(0, 20).forEach(c=>{
-    const el = document.createElement("div");
-    el.className = "campSavedItem";
-    el.innerHTML = `
-      <button class="historyItem" type="button" data-open="${escapeHtml(c.id)}">
-        <div class="historyItem__left">
-          <div class="historyItem__title">${escapeHtml(c.name)}</div>
-          <div class="historyItem__sub">${escapeHtml((c.type||"").toUpperCase())} • ${escapeHtml(c.releaseDate||"")}</div>
-        </div>
-        <div class="historyItem__right">
-          <div class="historyItem__score">R$ ${formatNumber(c.budget||0)}</div>
-          <div class="historyItem__tag">${escapeHtml(c.focus||"")}</div>
-        </div>
-      </button>
-      <button class="miniDanger" data-del="${escapeHtml(c.id)}">Excluir</button>
-    `;
-    campaignList.appendChild(el);
-  });
-
-  campaignList.querySelectorAll("[data-open]").forEach(b=>{
-    b.addEventListener("click", ()=>{
-      const id = b.getAttribute("data-open");
-      const c = findCampaign(id);
-      if(!c){ toast("Campanha não encontrada."); return; }
-      state.currentCampaign = c;
-      // Preenche form
-      if(campType) campType.value = c.type || "single";
-      if(campName) campName.value = c.name || "";
-      if(campRelease) campRelease.value = c.releaseDate || "";
-      if(campBudget) campBudget.value = String(c.budget || 0);
-      if(campFocus) campFocus.value = c.focus || "streams";
-      renderCampaign(c);
-      toast("Campanha aberta.");
-    });
-  });
-
-  campaignList.querySelectorAll("[data-del]").forEach(b=>{
-    b.addEventListener("click", ()=>{
-      const id = b.getAttribute("data-del");
-      if(!confirm("Excluir esta campanha?")) return;
-      deleteCampaign(id);
-      renderCampaignsList();
-      toast("Campanha excluída.");
-    });
-  });
-}
-
-// Checklist persistence by campaign/week/task
-function ckKey(campId, weekIndex, taskIndex){
-  return `vale_ck_${campId}_${weekIndex}_${taskIndex}`;
-}
-function loadCheck(key){
-  try{ return localStorage.getItem(key) === "1"; }catch{ return false; }
-}
-function saveCheck(key, checked){
-  try{ localStorage.setItem(key, checked ? "1" : "0"); }catch{}
-}
-
-// ===== General =====
 function resetAll(){
   if(!confirm("Limpar todas as respostas deste dispositivo?")) return;
   state.answers = {};
@@ -1006,15 +716,11 @@ function loadAnswers(){
   try{
     const raw = localStorage.getItem("vale_cm_answers");
     return raw ? JSON.parse(raw) : {};
-  }catch{
-    return {};
-  }
+  }catch{ return {}; }
 }
 
 function saveAnswers(obj){
-  try{
-    localStorage.setItem("vale_cm_answers", JSON.stringify(obj));
-  }catch{}
+  try{ localStorage.setItem("vale_cm_answers", JSON.stringify(obj)); }catch{}
 }
 
 function demoAnswers(){
@@ -1035,18 +741,15 @@ function demoAnswers(){
     planning: "basico",
     shows: "ocasional",
     revenue_sources: ["shows","streaming"],
-
     monthly_listeners_num: 5200,
     spotify_followers_num: 430,
     instagram_followers_num: 6800,
     tiktok_followers_num: 900,
     youtube_subs_num: 320,
-
-    notes: "Quero um plano para crescer no Brasil e abrir portas fora, mantendo identidade visual premium."
+    notes: "Quero um plano para crescer no Brasil e abrir portas fora, mantendo identidade premium."
   };
 }
 
-// THEME
 function loadTheme(){
   const t = localStorage.getItem("vale_cm_theme");
   return (t === "light" || t === "dark") ? t : "dark";
