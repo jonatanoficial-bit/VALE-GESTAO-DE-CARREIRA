@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07070a" />
+  <title>Gerenciador de Carreira • Vale Produção</title>
+  <meta name="description" content="Diagnóstico premium de carreira musical com relatório, plano mensal e anual — por Vale Produção." />
+  <link rel="icon" href="assets/logo.png" />
+  <link rel="preload" href="css/styles.css" as="style" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="topbar__left">
+        <button class="icon-btn" id="btnBack" aria-label="Voltar" title="Voltar">
+          <span class="icon">←</span>
+        </button>
+      </div>
+
+      <div class="topbar__center">
+        <div class="brand">
+          <img class="brand__logo" src="assets/logo.png" alt="Vale Produção" />
+          <div class="brand__text">
+            <div class="brand__title">Gerenciador de Carreira</div>
+            <div class="brand__subtitle">Relatório estratégico • Plano mensal e anual</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar__right">
+        <button class="icon-btn" id="btnTheme" aria-label="Alternar tema" title="Alternar tema">
+          <span class="icon">☾</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- LANDING -->
+      <section class="screen screen--active" id="screenLanding" aria-labelledby="landingTitle">
+        <div class="hero">
+          <div class="hero__logoWrap">
+            <img class="hero__logo" src="assets/logo.png" alt="Vale Produção" />
+            <div class="hero__glow" aria-hidden="true"></div>
+          </div>
+
+          <h1 class="hero__title" id="landingTitle">Diagnóstico premium da sua carreira musical</h1>
+          <p class="hero__desc">
+            Responda perguntas rápidas e receba um relatório completo: status atual, direcionamentos personalizados,
+            checklist de execução, e cronogramas mensal e anual.
+          </p>
+
+          <div class="hero__cards">
+            <div class="card">
+              <div class="card__kicker">Algoritmos & Plataformas</div>
+              <div class="card__title">Spotify, YouTube, TikTok e distribuição</div>
+              <div class="card__desc">Ações práticas para aumentar streams, seguidores e conversão em fãs.</div>
+            </div>
+            <div class="card">
+              <div class="card__kicker">Marketing & Crescimento</div>
+              <div class="card__title">Plano de conteúdo e campanhas</div>
+              <div class="card__desc">Rotina de criação, anúncios, colabs e estratégia de lançamento.</div>
+            </div>
+            <div class="card">
+              <div class="card__kicker">Carreira & Negócio</div>
+              <div class="card__title">Shows, receita e operação</div>
+              <div class="card__desc">Organização, equipe, metas e expansão (Brasil + mundo).</div>
+            </div>
+          </div>
+
+          <div class="hero__cta">
+            <button class="btn btn--primary" id="btnStart">
+              <span>Iniciar diagnóstico</span>
+              <span class="btn__icon">→</span>
+            </button>
+            <button class="btn btn--ghost" id="btnDemoFill">Preencher com exemplo</button>
+          </div>
+
+          <div class="fineprint">
+            <span class="pill">Mobile first</span>
+            <span class="pill">Relatório imprimível</span>
+            <span class="pill">Sem login (MVP)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- WIZARD -->
+      <section class="screen" id="screenWizard" aria-labelledby="wizardTitle">
+        <div class="wizard">
+          <div class="wizard__top">
+            <div class="wizard__meta">
+              <h2 class="wizard__title" id="wizardTitle">Questionário</h2>
+              <div class="wizard__sub" id="wizardSub">Responda com sinceridade para recomendações mais precisas.</div>
+            </div>
+
+            <div class="progress">
+              <div class="progress__bar" aria-hidden="true">
+                <div class="progress__fill" id="progressFill"></div>
+              </div>
+              <div class="progress__label" id="progressLabel">0%</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__head">
+              <div class="panel__section" id="qSection">—</div>
+              <div class="panel__count" id="qCount">—</div>
+            </div>
+
+            <div class="panel__body">
+              <div class="question">
+                <div class="question__text" id="qText">—</div>
+                <div class="question__help" id="qHelp"></div>
+              </div>
+
+              <div class="answer" id="answerArea"></div>
+            </div>
+
+            <div class="panel__foot">
+              <button class="btn btn--ghost" id="btnPrev">Anterior</button>
+              <button class="btn btn--primary" id="btnNext">Próximo</button>
+            </div>
+          </div>
+
+          <div class="wizard__bottom">
+            <button class="link" id="btnReset">Limpar respostas</button>
+            <span class="muted">As respostas ficam no seu dispositivo (localStorage).</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORT -->
+      <section class="screen" id="screenReport" aria-labelledby="reportTitle">
+        <div class="report">
+          <div class="report__head">
+            <div>
+              <h2 class="report__title" id="reportTitle">Relatório</h2>
+              <div class="report__subtitle" id="reportSubtitle">—</div>
+            </div>
+
+            <div class="report__actions">
+              <button class="btn btn--ghost" id="btnEdit">Editar respostas</button>
+              <button class="btn btn--primary" id="btnPrint">Imprimir / PDF</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card card--metric">
+              <div class="metric">
+                <div class="metric__label">Estágio atual</div>
+                <div class="metric__value" id="stageLabel">—</div>
+                <div class="metric__hint" id="stageHint">—</div>
+              </div>
+            </div>
+
+            <div class="card card--metric">
+              <div class="metric">
+                <div class="metric__label">Score geral</div>
+                <div class="metric__value"><span id="overallScore">—</span><span class="metric__suffix">/100</span></div>
+                <div class="metric__hint">Diagnóstico por pilares</div>
+              </div>
+            </div>
+
+            <div class="card card--metric">
+              <div class="metric">
+                <div class="metric__label">Próxima meta</div>
+                <div class="metric__value" id="nextGoal">—</div>
+                <div class="metric__hint">Foco nas próximas 4 semanas</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__title">Mapa de pilares</div>
+            <div class="pillrow" id="pillarChips"></div>
+            <div class="bars" id="pillarBars"></div>
+          </div>
+
+          <div class="grid grid--2">
+            <div class="card">
+              <div class="card__title">Prioridades (30 dias)</div>
+              <ul class="list" id="priorities30"></ul>
+            </div>
+
+            <div class="card">
+              <div class="card__title">Checklist de execução</div>
+              <ul class="checklist" id="checklist"></ul>
+            </div>
+          </div>
+
+          <div class="grid grid--2">
+            <div class="card">
+              <div class="card__title">Cronograma mensal (4 semanas)</div>
+              <div class="timeline" id="timelineMonth"></div>
+            </div>
+
+            <div class="card">
+              <div class="card__title">Cronograma anual (12 meses)</div>
+              <div class="timeline" id="timelineYear"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__title">Recomendações personalizadas</div>
+            <div class="sections" id="recommendations"></div>
+          </div>
+
+          <footer class="footer">
+            <div class="footer__brand">
+              <img src="assets/logo.png" alt="Vale Produção" />
+              <div>
+                <div class="footer__title">Vale Produção</div>
+                <div class="footer__sub">Criado por Jonatan Vale • Direitos reservados</div>
+              </div>
+            </div>
+
+            <div class="footer__note">
+              Este relatório é orientativo. Resultados variam conforme consistência, qualidade artística, mercado e execução.
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
