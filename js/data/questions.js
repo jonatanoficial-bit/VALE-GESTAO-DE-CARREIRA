@@ -1,6 +1,6 @@
 // js/data/questions.js
 // Vale Produção — Career Manager
-// Questionário base (MVP Premium) + Métricas numéricas
+// Questionário base (MVP Premium) + Métricas avançadas + Geografia/Tráfego (manual)
 
 export const QUESTIONS = [
   // Identidade
@@ -214,7 +214,7 @@ export const QUESTIONS = [
     ]
   },
 
-  // Métricas (numéricas) — upgrade Parte 2
+  // Métricas base (numéricas)
   {
     id: "monthly_listeners_num",
     section: "Métricas",
@@ -261,8 +261,6 @@ export const QUESTIONS = [
     max: 50000000,
     step: 10
   },
-
-  // Métricas avançadas (manual/offline) — upgrade Etapa A
   {
     id: "streams_28d_total",
     section: "Métricas",
@@ -292,6 +290,61 @@ export const QUESTIONS = [
     min: 0,
     max: 500,
     step: 1
+  },
+
+  // ✅ NOVO — Geo / Top / Tráfego (manual)
+  {
+    id: "top_countries_3",
+    section: "Métricas",
+    type: "text",
+    text: "Top 3 países com mais plays (últimos 28 dias) — escreva separados por vírgula",
+    help: "Ex.: Brasil, Portugal, Estados Unidos. Se não souber, escreva “não sei”."
+  },
+  {
+    id: "top_cities_3",
+    section: "Métricas",
+    type: "text",
+    text: "Top 3 cidades com mais plays (últimos 28 dias) — separados por vírgula",
+    help: "Ex.: São Paulo, Rio de Janeiro, Belo Horizonte. Se não souber, escreva “não sei”."
+  },
+  {
+    id: "top_tracks_3",
+    section: "Métricas",
+    type: "text",
+    text: "Top 3 músicas com mais plays (últimos 28 dias) — separadas por vírgula",
+    help: "Ex.: Caminhos da Fé, Promessas, Gratidão. Se não souber, escreva “não sei”."
+  },
+  {
+    id: "traffic_source_main",
+    section: "Métricas",
+    type: "single",
+    text: "Qual a principal fonte de tráfego hoje (onde as pessoas chegam até sua música)?",
+    help: "Escolha o que mais traz plays/descoberta.",
+    options: [
+      { value: "algoritmo", label: "Algoritmo (rádio do Spotify, autoplay, recomendações)" },
+      { value: "playlists", label: "Playlists (editoriais/independentes/usuários)" },
+      { value: "social", label: "Redes sociais (TikTok/Reels/Shorts/Stories)" },
+      { value: "youtube", label: "YouTube (busca, Shorts, recomendações)" },
+      { value: "shows", label: "Shows / eventos / presencial" },
+      { value: "colabs", label: "Colabs / feats / outros artistas" },
+      { value: "ads", label: "Anúncios pagos" },
+      { value: "nao_sei", label: "Não sei" }
+    ]
+  },
+  {
+    id: "traffic_weakest",
+    section: "Métricas",
+    type: "single",
+    text: "Qual canal está mais fraco hoje (onde você quase não tem resultado)?",
+    options: [
+      { value: "algoritmo", label: "Algoritmo / retenção / repetição" },
+      { value: "playlists", label: "Playlists (entrada em listas)" },
+      { value: "social", label: "Social (TikTok/Reels/Shorts)" },
+      { value: "youtube", label: "YouTube" },
+      { value: "shows", label: "Shows / presença local" },
+      { value: "colabs", label: "Colabs / networking" },
+      { value: "ads", label: "Anúncios" }
+    ]
   },
 
   // Observações
