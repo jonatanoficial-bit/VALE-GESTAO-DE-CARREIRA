@@ -262,6 +262,38 @@ export const QUESTIONS = [
     step: 10
   },
 
+  // Métricas avançadas (manual/offline) — upgrade Etapa A
+  {
+    id: "streams_28d_total",
+    section: "Métricas",
+    type: "number",
+    text: "Quantos streams você fez nos últimos 28 dias (somando plataformas)?",
+    help: "Some Spotify + Deezer + Apple + YouTube Music (se tiver). Se não souber, coloque 0. Depois você pode ajustar.",
+    min: 0,
+    max: 500000000,
+    step: 100
+  },
+  {
+    id: "youtube_views_28d",
+    section: "Métricas",
+    type: "number",
+    text: "Quantas visualizações no YouTube nos últimos 28 dias? (vídeos + Shorts)",
+    help: "Pegue no YouTube Studio (Últimos 28 dias). Se não souber, coloque 0.",
+    min: 0,
+    max: 500000000,
+    step: 100
+  },
+  {
+    id: "content_posts_7d",
+    section: "Métricas",
+    type: "number",
+    text: "Quantos conteúdos você postou nos últimos 7 dias? (Reels/TikTok/Shorts/Posts)",
+    help: "Contagem simples: ajuda o sistema a ligar 'constância' com crescimento.",
+    min: 0,
+    max: 500,
+    step: 1
+  },
+
   // Observações
   {
     id: "notes",
