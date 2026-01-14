@@ -10,8 +10,9 @@
   <!-- CSS base (premium) -->
   <link rel="stylesheet" href="./css/styles.css?v=11" />
   <link rel="stylesheet" href="./css/desktop-fix.css?v=11" />
-  <!-- Add-on seguro (Campanhas) -->
+  <!-- Add-ons seguros -->
   <link rel="stylesheet" href="./css/campaigns.css?v=11" />
+  <link rel="stylesheet" href="./css/content-plan.css?v=11" />
 </head>
 
 <body>
@@ -267,6 +268,30 @@
             </div>
           </div>
 
+          <!-- ✅ NOVO (ETAPA D): Plano de Conteúdo -->
+          <div class="panel">
+            <div class="panel__kicker">Conteúdo</div>
+            <div class="panel__title">Plano de Conteúdo (30 ideias prontas)</div>
+            <div class="panel__desc">
+              Ideias geradas com base em objetivo, tráfego, estágio e sua música mais forte.
+            </div>
+
+            <div class="contentPlanTop">
+              <div class="contentPlanMeta">
+                <div id="cpMetaGoal" class="badgeMini">Objetivo: —</div>
+                <div id="cpMetaTraffic" class="badgeMini">Tráfego: —</div>
+                <div id="cpMetaStage" class="badgeMini">Status: —</div>
+                <div id="cpMetaTrack" class="badgeMini">Motor: —</div>
+              </div>
+
+              <div class="contentPlanActions">
+                <button id="btnCopyContentPlan" class="smallBtn smallBtn--primary">Copiar plano</button>
+              </div>
+            </div>
+
+            <div id="contentPlanGrid" class="contentPlanGrid"></div>
+          </div>
+
           <!-- Campanhas -->
           <div class="panel">
             <div class="panel__kicker">Campanhas</div>
@@ -308,11 +333,12 @@
                   <div class="field">
                     <label>Foco</label>
                     <select id="campFocus" class="select">
-                      <option value="streaming">Streaming</option>
-                      <option value="video">YouTube / Shorts</option>
+                      <option value="streams">Streaming</option>
+                      <option value="youtube">YouTube / Shorts</option>
                       <option value="social">Reels / TikTok</option>
                       <option value="shows">Shows</option>
-                      <option value="all">Completo</option>
+                      <option value="marca">Marca</option>
+                      <option value="seguidores">Seguidores</option>
                     </select>
                   </div>
 
