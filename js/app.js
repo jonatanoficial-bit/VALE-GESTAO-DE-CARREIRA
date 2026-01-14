@@ -12,6 +12,7 @@ import {
   deleteCampaign,
   findCampaign
 } from "./core/campaigns.js";
+import { buildContentPlan } from "./core/content-plan.js";
 
 const screens = {
   landing: document.getElementById("screenLanding"),
@@ -79,7 +80,7 @@ const sparkSf = document.getElementById("sparkSf");
 const compareInsights = document.getElementById("compareInsights");
 const compareActions = document.getElementById("compareActions");
 
-// ✅ Campanhas (NOVO)
+// Campanhas
 const campType = document.getElementById("campType");
 const campName = document.getElementById("campName");
 const campDate = document.getElementById("campDate");
@@ -90,11 +91,20 @@ const btnClearCampaigns = document.getElementById("btnClearCampaigns");
 const campaignList = document.getElementById("campaignList");
 const campaignDetail = document.getElementById("campaignDetail");
 
+// ✅ Etapa D — Plano de Conteúdo
+const cpMetaGoal = document.getElementById("cpMetaGoal");
+const cpMetaTraffic = document.getElementById("cpMetaTraffic");
+const cpMetaStage = document.getElementById("cpMetaStage");
+const cpMetaTrack = document.getElementById("cpMetaTrack");
+const contentPlanGrid = document.getElementById("contentPlanGrid");
+const btnCopyContentPlan = document.getElementById("btnCopyContentPlan");
+
 let state = {
   idx: 0,
   answers: loadAnswers(),
   lastScreen: "landing",
-  lastBuiltReport: null
+  lastBuiltReport: null,
+  lastContentPlan: null
 };
 
 init();
@@ -106,7 +116,8 @@ function init(){
   btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
-  renderCampaigns(); // ✅ novo
+  renderCampaigns();
+  clearContentPlan();
 }
 
 function bind(){
@@ -138,7 +149,7 @@ function bind(){
 
   btnCompare?.addEventListener("click", runCompare);
 
-  // ✅ Campanhas
+  // Campanhas
   btnCreateCampaign?.addEventListener("click", createCampaign);
   btnClearCampaigns?.addEventListener("click", ()=>{
     if(!confirm("Remover todas as campanhas deste dispositivo?")) return;
@@ -148,6 +159,9 @@ function bind(){
     hideCampaignDetail();
     toast("Campanhas removidas.");
   });
+
+  // ✅ Plano de conteúdo
+  btnCopyContentPlan?.addEventListener("click", copyContentPlan);
 
   window.addEventListener("keydown", (e)=>{
     if(state.lastScreen !== "wizard") return;
@@ -214,7 +228,6 @@ function nextQ(){
   if(state.idx >= QUESTIONS.length - 1){
     buildReport();
     showScreen("report");
-    // ✅ garantir campanhas visíveis no report
     renderCampaigns();
     return;
   }
@@ -448,6 +461,11 @@ function buildReport(){
     recommendations.appendChild(el);
   });
 
+  // ✅ Etapa D: gerar e renderizar plano de conteúdo
+  const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
+  state.lastContentPlan = contentPlan;
+  renderContentPlan(contentPlan);
+
   const fullReport = {
     id: uid(),
     createdAt: new Date().toISOString(),
@@ -455,14 +473,15 @@ function buildReport(){
     artistName: name,
     answers: state.answers,
     result,
-    analytics
+    analytics,
+    contentPlan
   };
 
   state.lastBuiltReport = fullReport;
   addReport(fullReport);
   renderHistory();
   renderCompareSelects(true);
-  renderCampaigns(); // ✅ manter atualizado
+  renderCampaigns();
   toast("Relatório gerado e salvo no histórico.");
 }
 
@@ -496,6 +515,95 @@ function renderAnalytics(a){
     li.textContent = t;
     analyticsGoals.appendChild(li);
   });
+}
+
+// ✅ Conteúdo
+function clearContentPlan(){
+  if(cpMetaGoal) cpMetaGoal.textContent = "Objetivo: —";
+  if(cpMetaTraffic) cpMetaTraffic.textContent = "Tráfego: —";
+  if(cpMetaStage) cpMetaStage.textContent = "Status: —";
+  if(cpMetaTrack) cpMetaTrack.textContent = "Motor: —";
+  if(contentPlanGrid) contentPlanGrid.innerHTML = `<div class="historyEmpty">Gere um relatório para criar o plano de conteúdo.</div>`;
+  state.lastContentPlan = null;
+}
+
+function renderContentPlan(plan){
+  if(!plan || !plan.ideas || !plan.ideas.length){
+    clearContentPlan();
+    return;
+  }
+
+  cpMetaGoal.textContent = `Objetivo: ${safeText(plan.meta.goal || "—")}`;
+  cpMetaTraffic.textContent = `Tráfego: ${safeText(plan.meta.traffic || "—")}`;
+  cpMetaStage.textContent = `Status: ${safeText(plan.meta.stage || "—")}`;
+  cpMetaTrack.textContent = `Motor: ${safeText(plan.meta.track || "—")}`;
+
+  contentPlanGrid.innerHTML = "";
+  plan.ideas.forEach(idea=>{
+    const el = document.createElement("div");
+    el.className = "ideaCard";
+    el.innerHTML = `
+      <div class="ideaTop">
+        <div class="ideaTitle">${escapeHtml(safeText(idea.title))}</div>
+        <div class="ideaDay">Dia ${String(idea.day)}</div>
+      </div>
+
+      <div class="ideaTags">
+        ${(idea.tags || []).slice(0,3).map(t=> `<div class="ideaTag">${escapeHtml(safeText(t))}</div>`).join("")}
+      </div>
+
+      <div class="ideaBody">
+        ${escapeHtml(safeText(idea.script)).replaceAll("\n","<br>")}
+      </div>
+
+      <div class="ideaCTA">
+        <strong>${escapeHtml(safeText(idea.cta))}</strong>
+      </div>
+    `;
+    contentPlanGrid.appendChild(el);
+  });
+}
+
+async function copyContentPlan(){
+  if(!state.lastContentPlan || !state.lastContentPlan.ideas?.length){
+    toast("Gere um relatório para copiar o plano.");
+    return;
+  }
+
+  const p = state.lastContentPlan;
+  const lines = [];
+  lines.push("VALE PRODUÇÃO — PLANO DE CONTEÚDO (30 DIAS)");
+  lines.push(`Objetivo: ${safeText(p.meta.goal)} • Tráfego: ${safeText(p.meta.traffic)} • Status: ${safeText(p.meta.stage)} • Motor: ${safeText(p.meta.track)}`);
+  lines.push("");
+  p.ideas.forEach(i=>{
+    lines.push(`Dia ${i.day} — ${safeText(i.title)}`);
+    lines.push(`Tags: ${(i.tags||[]).join(" • ")}`);
+    lines.push(safeText(i.script));
+    lines.push(safeText(i.cta));
+    lines.push("—");
+  });
+
+  const text = lines.join("\n");
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Plano copiado.");
+  }catch{
+    // fallback
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      toast("Plano copiado.");
+    }catch{
+      toast("Não foi possível copiar. Seu navegador bloqueou a área de transferência.");
+    }
+  }
 }
 
 function renderHistory(){
@@ -542,6 +650,17 @@ function openReportFromHistory(id){
   showScreen("report");
   renderCompareSelects(true);
   renderCampaigns();
+
+  // conteúdo do histórico (se existir) ou gera de novo
+  if(r.contentPlan?.ideas?.length){
+    state.lastContentPlan = r.contentPlan;
+    renderContentPlan(r.contentPlan);
+  }else{
+    const cp = buildContentPlan({ answers: state.answers, reportResult: r.result });
+    state.lastContentPlan = cp;
+    renderContentPlan(cp);
+  }
+
   toast("Relatório aberto do histórico.");
 }
 
@@ -642,6 +761,16 @@ function buildReportFromStored(fullReport){
     el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
     recommendations.appendChild(el);
   });
+
+  // Etapa D (histórico)
+  if(fullReport.contentPlan?.ideas?.length){
+    state.lastContentPlan = fullReport.contentPlan;
+    renderContentPlan(fullReport.contentPlan);
+  }else{
+    const cp = buildContentPlan({ answers: state.answers, reportResult: result });
+    state.lastContentPlan = cp;
+    renderContentPlan(cp);
+  }
 
   renderHistory();
 }
@@ -746,13 +875,13 @@ function resetAll(){
   toast("Respostas removidas.");
 }
 
-// ✅ Campanhas (NOVO)
+// Campanhas
 function createCampaign(){
   const type = campType?.value || "single";
   const name = safeText(campName?.value || "");
   const releaseDate = campDate?.value || "";
   const budget = Number(campBudget?.value || 0);
-  const focus = campFocus?.value || "all";
+  const focus = safeText(campFocus?.value || "streams");
 
   if(!name){ toast("Digite o nome do projeto."); return; }
   if(!releaseDate){ toast("Selecione a data de lançamento."); return; }
@@ -801,10 +930,7 @@ function renderCampaigns(){
       </div>
     `;
 
-    el.querySelector("[data-open]")?.addEventListener("click", ()=>{
-      openCampaignDetail(c.id);
-    });
-
+    el.querySelector("[data-open]")?.addEventListener("click", ()=> openCampaignDetail(c.id));
     el.querySelector("[data-del]")?.addEventListener("click", ()=>{
       if(!confirm("Excluir esta campanha?")) return;
       deleteCampaign(c.id);
@@ -824,9 +950,8 @@ function openCampaignDetail(id){
 
   const budget = Number(c.budget || 0);
   const type = (c.type || "single").toUpperCase();
-  const focus = safeText(c.focus || "all");
+  const focus = safeText(c.focus || "streams");
   const date = safeText(c.releaseDate || "");
-
   const weeks = Array.isArray(c?.plan?.weeks) ? c.plan.weeks : [];
 
   campaignDetail.classList.add("campaignDetail--on");
@@ -865,6 +990,7 @@ function hideCampaignDetail(){
   campaignDetail.innerHTML = "";
 }
 
+// Storage: answers
 function loadAnswers(){
   try{
     const raw = localStorage.getItem("vale_cm_answers");
@@ -880,29 +1006,42 @@ function demoAnswers(){
   return {
     artist_name: "Jonatan Vale (demo)",
     genre: "gospel",
-    goal: "crescer_fas",
+    goal: "viralizar",
     career_time: "2-5y",
     released_music: "3-10",
     distributor: "ONErpm",
     metadata_ready: "parcial",
-    spotify_profile: "basico",
+    spotify_profile: "bom",
     youtube_channel: "ativo",
-    tiktok_use: "asvezes",
+    tiktok_use: "semanal",
     content_frequency: "3w",
     ads_budget: "low",
     team: "parcial",
-    planning: "basico",
+    planning: "bom",
     shows: "ocasional",
     revenue_sources: ["shows","streaming"],
+
     monthly_listeners_num: 5200,
     spotify_followers_num: 430,
     instagram_followers_num: 6800,
     tiktok_followers_num: 900,
     youtube_subs_num: 320,
-    notes: "Quero um plano para crescer no Brasil e abrir portas fora, mantendo identidade premium."
+
+    streams_28d_total: 23000,
+    youtube_views_28d: 9000,
+    content_posts_7d: 6,
+
+    top_countries_3: "Brasil, Portugal, Estados Unidos",
+    top_cities_3: "São Paulo, Rio de Janeiro, Salvador",
+    top_tracks_3: "Caminhos da Fé, Promessas, Gratidão",
+    traffic_source_main: "social",
+    traffic_weakest: "playlists",
+
+    notes: "Quero crescer no Brasil e abrir portas fora, mantendo identidade premium."
   };
 }
 
+// Theme
 function loadTheme(){
   const t = localStorage.getItem("vale_cm_theme");
   return (t === "light" || t === "dark") ? t : "dark";
