@@ -1,8 +1,8 @@
 // js/core/analytics.js
 // Vale Produção — Analytics (heurística inteligente)
-// Sem API externa: diagnósticos e metas com base nas métricas informadas.
+// Upgrade Etapa B: Geo/Top músicas/Tráfego (manual/offline)
 
-import { clamp, formatNumber } from "../utils.js";
+import { clamp, formatNumber, safeText } from "../utils.js";
 
 function n(v){ return (typeof v === "number" && Number.isFinite(v)) ? v : 0; }
 
@@ -21,8 +21,7 @@ function tagFromPct(p){
 }
 
 function growthTarget(current){
-  // metas realistas, quanto menor a base maior % (mas sem exagero)
-  if(current <= 0) return 50;          // objetivo mínimo para sair do zero
+  if(current <= 0) return 50;
   if(current < 200) return 60;
   if(current < 1000) return 35;
   if(current < 5000) return 25;
@@ -36,6 +35,26 @@ function ratio(a,b){
   return a / b;
 }
 
+function parseTop3(text){
+  const t = safeText(text).trim();
+  if(!t || t.toLowerCase() === "não sei" || t.toLowerCase() === "nao sei") return [];
+  return t.split(",").map(s=> safeText(s).trim()).filter(Boolean).slice(0,3);
+}
+
+function labelTraffic(v){
+  const map = {
+    algoritmo: "Algoritmo",
+    playlists: "Playlists",
+    social: "Redes sociais",
+    youtube: "YouTube",
+    shows: "Shows",
+    colabs: "Colabs",
+    ads: "Anúncios",
+    nao_sei: "Não sei"
+  };
+  return map[v] || "—";
+}
+
 export function buildAnalytics(answers){
   const ml = n(answers.monthly_listeners_num);
   const sf = n(answers.spotify_followers_num);
@@ -46,7 +65,13 @@ export function buildAnalytics(answers){
   const yv28 = n(answers.youtube_views_28d);
   const posts7 = n(answers.content_posts_7d);
 
-  // Pcts (log) — referências "saudáveis" para mobile-first
+  const topCountries = parseTop3(answers.top_countries_3);
+  const topCities = parseTop3(answers.top_cities_3);
+  const topTracks = parseTop3(answers.top_tracks_3);
+  const trafficMain = safeText(answers.traffic_source_main || "");
+  const trafficWeak = safeText(answers.traffic_weakest || "");
+
+  // Pcts (log)
   const pML = pctFromLog(ml, 2000000);
   const pSF = pctFromLog(sf, 500000);
   const pIG = pctFromLog(ig, 2000000);
@@ -54,7 +79,7 @@ export function buildAnalytics(answers){
   const pYT = pctFromLog(yt, 1000000);
   const pS28 = pctFromLog(s28, 20000000);
   const pYV28 = pctFromLog(yv28, 50000000);
-  const pP7 = clamp(Math.round((posts7 / 14) * 100), 0, 100); // 14 posts/7d = 2/dia
+  const pP7 = clamp(Math.round((posts7 / 14) * 100), 0, 100);
 
   const c1 = tagFromPct(pML);
   const c2 = tagFromPct(pSF);
@@ -65,195 +90,138 @@ export function buildAnalytics(answers){
   const c7 = tagFromPct(pYV28);
   const c8 = tagFromPct(pP7);
 
-  // Conversões (heurísticas)
-  const convSpotify = ratio(sf, ml); // seguidores / ouvintes mensais
-  // referência: 2% a 8% geralmente é “ok/boa” (depende do nicho e momento)
-  const convScore = clamp(Math.round((convSpotify / 0.06) * 100), 0, 140); // 6% como referência
+  // Conversões
+  const convSpotify = ratio(sf, ml);
+  const convPct = convSpotify * 100;
 
-  const socialVsStreaming = (ig + tk + yt) > 0 ? ratio(ml, (ig + tk + yt)) : 0;
-
-  // Eficiência (heurísticas)
-  const streamsPerListener = (ml > 0) ? ratio(s28, ml) : 0; // 28d streams por ouvinte mensal
+  const streamsPerListener = (ml > 0) ? ratio(s28, ml) : 0;
   const ytViewsPerSub = (yt > 0) ? ratio(yv28, yt) : 0;
 
   const cards = [
-    {
-      name: "Streams • Últimos 28 dias",
-      value: formatNumber(s28),
-      sub: "Volume total (Spotify/Deezer/Apple/YouTube Music)",
-      pct: pS28,
-      ...c6
-    },
-    {
-      name: "Spotify • Ouvintes mensais",
-      value: formatNumber(ml),
-      sub: "Potencial de descoberta e alcance recente",
-      pct: pML,
-      ...c1
-    },
-    {
-      name: "Spotify • Seguidores",
-      value: formatNumber(sf),
-      sub: "Base fiel (saves + retorno em lançamentos)",
-      pct: pSF,
-      ...c2
-    },
-    {
-      name: "Instagram • Seguidores",
-      value: formatNumber(ig),
-      sub: "Audiência social e relacionamento",
-      pct: pIG,
-      ...c3
-    },
-    {
-      name: "TikTok • Seguidores",
-      value: formatNumber(tk),
-      sub: "Alcance orgânico e viralidade",
-      pct: pTK,
-      ...c4
-    },
-    {
-      name: "YouTube • Inscritos",
-      value: formatNumber(yt),
-      sub: "Conteúdo longo + Shorts + prova social",
-      pct: pYT,
-      ...c5
-    },
-    {
-      name: "YouTube • Views (28 dias)",
-      value: formatNumber(yv28),
-      sub: "Descoberta por vídeo/Shorts (YouTube Studio)",
-      pct: pYV28,
-      ...c7
-    },
-    {
-      name: "Constância • Posts (7 dias)",
-      value: formatNumber(posts7),
-      sub: "Reels/TikTok/Shorts/Posts: rotina recente",
-      pct: pP7,
-      ...c8
-    }
+    { name: "Streams • Últimos 28 dias", value: formatNumber(s28), sub: "Volume total (somando plataformas)", pct: pS28, ...c6 },
+    { name: "Spotify • Ouvintes mensais", value: formatNumber(ml), sub: "Alcance recente e descoberta", pct: pML, ...c1 },
+    { name: "Spotify • Seguidores", value: formatNumber(sf), sub: "Base fiel (retorno em lançamentos)", pct: pSF, ...c2 },
+    { name: "Instagram • Seguidores", value: formatNumber(ig), sub: "Relacionamento e prova social", pct: pIG, ...c3 },
+    { name: "TikTok • Seguidores", value: formatNumber(tk), sub: "Alcance orgânico e viral", pct: pTK, ...c4 },
+    { name: "YouTube • Inscritos", value: formatNumber(yt), sub: "Canal, Shorts e prova social", pct: pYT, ...c5 },
+    { name: "YouTube • Views (28 dias)", value: formatNumber(yv28), sub: "Descoberta por vídeo/Shorts", pct: pYV28, ...c7 },
+    { name: "Constância • Posts (7 dias)", value: formatNumber(posts7), sub: "Reels/TikTok/Shorts/Posts", pct: pP7, ...c8 }
   ];
 
   const insights = [];
   const goals = [];
 
-  // Insight: conversão Spotify (seguidores/ouvintes)
+  // Conversão Spotify
   if(ml > 0){
-    const convPct = (convSpotify * 100);
-    if(convSpotify >= 0.08){
-      insights.push(`Conversão Spotify forte: ~${convPct.toFixed(1)}% dos ouvintes viram seguidores. Mantenha CTAs (seguir/salvar).`);
-    }else if(convSpotify >= 0.03){
-      insights.push(`Conversão Spotify ok: ~${convPct.toFixed(1)}%. Dá para aumentar com CTA e conteúdo do lançamento.`);
-    }else{
-      insights.push(`Conversão Spotify baixa: ~${convPct.toFixed(1)}%. Falta “converter” ouvintes em seguidores (CTA, perfil forte, repetição do refrão e stories).`);
-    }
+    if(convSpotify >= 0.08) insights.push(`Conversão Spotify forte: ~${convPct.toFixed(1)}% dos ouvintes viram seguidores. Mantenha CTA (seguir/salvar).`);
+    else if(convSpotify >= 0.03) insights.push(`Conversão Spotify ok: ~${convPct.toFixed(1)}%. Dá para subir com CTA e perfil completo.`);
+    else insights.push(`Conversão Spotify baixa: ~${convPct.toFixed(1)}%. Trabalhe CTA, perfil, repetição do refrão e “contexto” em conteúdo.`);
   }else{
-    insights.push("Spotify ainda sem tração (0 ouvintes). Prioridade: lançar/otimizar perfil e gerar descoberta com conteúdo e colabs.");
+    insights.push("Spotify ainda sem tração (0 ouvintes). Prioridade: perfil completo + 1 lançamento + conteúdo curto consistente.");
   }
 
-  // Insight: Streams 28d vs ouvintes (frequência/recência)
+  // Retenção (streams/ouvintes)
   if(s28 > 0 && ml > 0){
-    // referência ampla: 2–8 streams por ouvinte/mês (varia muito)
-    if(streamsPerListener >= 7){
-      insights.push(`Boa repetição no streaming: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). Indica retenção/recorrência.`);
-    }else if(streamsPerListener >= 3){
-      insights.push(`Retenção razoável: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). Dá para subir com séries de conteúdo e playlists.`);
-    }else{
-      insights.push(`Retenção baixa: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). A música pode estar sendo "descoberta" mas não repetida (trabalhar gancho + refrão + contexto).`);
-    }
-  }else if(ml > 0 && s28 === 0){
-    insights.push("Você informou ouvintes no Spotify, mas streams 28d = 0. Confirme o número (ou some plataformas) para o sistema calcular metas melhores.");
+    if(streamsPerListener >= 7) insights.push(`Boa repetição no streaming: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). Indica retenção.`);
+    else if(streamsPerListener >= 3) insights.push(`Retenção razoável: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). Suba com séries e playlists.`);
+    else insights.push(`Retenção baixa: ~${streamsPerListener.toFixed(1)} streams por ouvinte (28d). Ajuste gancho + refrão + formatos de conteúdo.`);
   }
 
-  // Insight: YouTube views 28d vs inscritos (alcance)
-  if(yv28 > 0){
-    if(yt === 0){
-      insights.push("Você tem views no YouTube, mas 0 inscritos informados: ajuste o número de inscritos para calibrar conversão.");
-    }else{
-      if(ytViewsPerSub >= 4){
-        insights.push(`YouTube com boa descoberta: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Ótimo para crescer se tiver CTA e frequência.`);
-      }else if(ytViewsPerSub >= 1.5){
-        insights.push(`YouTube ok: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Reforce CTA (inscrever/ativar sino) e Shorts com gancho nos 2s.`);
-      }else{
-        insights.push(`YouTube baixo em descoberta: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Falta volume/variação de conteúdo (Shorts + thumbnails + títulos).`);
-      }
-    }
+  // YouTube eficiência
+  if(yv28 > 0 && yt > 0){
+    if(ytViewsPerSub >= 4) insights.push(`YouTube com boa descoberta: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Ótimo para crescer com CTA.`);
+    else if(ytViewsPerSub >= 1.5) insights.push(`YouTube ok: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Reforce CTA e Shorts com gancho em 2s.`);
+    else insights.push(`YouTube fraco em descoberta: ~${ytViewsPerSub.toFixed(1)} views por inscrito (28d). Falta volume/variação (Shorts + títulos).`);
   }
 
-  // Insight: constância
-  if(posts7 > 0){
-    if(posts7 >= 10){
-      insights.push("Constância forte na última semana. Agora o foco é repetir formatos vencedores e manter CTA para conversão.");
-    }else if(posts7 >= 4){
-      insights.push("Constância ok, mas dá para subir. Meta simples: 1 conteúdo por dia por 7 dias, reaproveitando o mesmo áudio/tema.");
-    }else{
-      insights.push("Constância baixa nos últimos 7 dias. Crescimento orgânico fica difícil sem volume. Prioridade: rotina mínima (4–7 posts/semana)." );
-    }
+  // Constância
+  if(posts7 >= 10) insights.push("Constância forte na última semana. Agora foque em repetir formatos vencedores e converter para seguidores/streams.");
+  else if(posts7 >= 4) insights.push("Constância ok, mas dá para subir. Meta simples: 1 conteúdo por dia por 7 dias (reaproveitando o mesmo trecho).");
+  else insights.push("Constância baixa. Sem volume, o algoritmo não entrega. Prioridade: rotina mínima (4–7 posts/semana).");
+
+  // ✅ Geo/Top
+  if(topCountries.length){
+    insights.push(`Top países (28d): ${topCountries.join(", ")}. Direcione conteúdo com linguagem/legenda e horários desses públicos.`);
   }else{
-    insights.push("Você informou 0 conteúdos nos últimos 7 dias. Se isso estiver correto, a prioridade é criar rotina mínima antes de cobrar resultados do algoritmo.");
+    insights.push("Você não informou países. Quando tiver, use isso para segmentar conteúdo e anúncios com mais precisão.");
   }
 
-  // Insight: “muita rede social vs pouco streaming”
-  const socialTotal = ig + tk + yt;
-  if(socialTotal >= 5000 && ml > 0){
-    // Se o streaming é muito baixo comparado à base social
-    if(socialVsStreaming < 0.12){
-      insights.push("Você tem audiência social, mas poucos ouvintes mensais: crie funil para streaming (links, CTA, desafios com a música e pre-save).");
-    }else{
-      insights.push("Sua audiência social está convertendo em streaming de forma razoável. Continue reforçando links e séries de conteúdo.");
-    }
+  if(topCities.length){
+    insights.push(`Top cidades (28d): ${topCities.join(", ")}. Isso é ouro para shows, rádio local, creators e collabs regionais.`);
+  }else{
+    insights.push("Você não informou cidades. Quando tiver, isso ajuda a planejar shows e creators locais.");
   }
 
-  // Insight: equilíbrio entre redes
-  if(ig > 0 && tk === 0){
-    insights.push("Instagram está ativo, mas TikTok está zerado: você está perdendo alcance orgânico. Replicar Reels como TikTok é um atalho.");
-  }
-  if(tk > 0 && ig === 0){
-    insights.push("TikTok ativo, Instagram zerado: consolide presença no IG para relacionamento e prova social (repost do TikTok + stories).");
+  if(topTracks.length){
+    insights.push(`Top músicas (28d): ${topTracks.join(", ")}. Use a #1 como motor: crie 10 variações de conteúdo do refrão/trecho mais forte.`);
+  }else{
+    insights.push("Você não informou Top músicas. Quando tiver, a #1 vira o motor principal de conteúdo e funil.");
   }
 
-  // Insight: YouTube subutilizado
-  if(yt < 200 && (ml > 2000 || ig > 3000 || tk > 3000)){
-    insights.push("Seu YouTube está abaixo do seu potencial. Shorts + lyric video + 1 conteúdo fixo por semana elevam prova social.");
+  // ✅ Tráfego
+  if(trafficMain){
+    insights.push(`Sua principal fonte de tráfego hoje: ${labelTraffic(trafficMain)}. O plano vai potencializar esse canal sem depender do acaso.`);
+  }else{
+    insights.push("Fonte principal de tráfego não informada. Isso ajuda a escolher onde focar (social, playlists, algoritmo, YouTube).");
   }
 
-  // Goals 30 dias
-  const gML = growthTarget(ml);
-  const gSF = growthTarget(sf);
-  const gIG = growthTarget(ig);
-  const gTK = growthTarget(tk);
-  const gYT = growthTarget(yt);
-  const gS28 = growthTarget(s28);
-  const gYV28 = growthTarget(yv28);
+  if(trafficWeak){
+    insights.push(`Canal mais fraco hoje: ${labelTraffic(trafficWeak)}. Isso vira prioridade para reduzir dependência de um único canal.`);
+  }
 
-  goals.push(`Spotify: aumentar ouvintes mensais em ~${gML}% (com conteúdo curto + colab + playlists independentes).`);
-  goals.push(`Spotify: aumentar seguidores em ~${gSF}% (CTA “seguir/salvar” em todo conteúdo do lançamento).`);
-  goals.push(`Instagram: aumentar seguidores em ~${gIG}% (3–5 posts/semana + stories diários por 7 dias).`);
-  goals.push(`TikTok: aumentar seguidores em ~${gTK}% (1 vídeo/dia por 7 dias com variações do mesmo áudio).`);
-  goals.push(`YouTube: aumentar inscritos em ~${gYT}% (Shorts 3x/semana + 1 vídeo/semana).`);
+  // Goals 30 dias (base)
+  goals.push(`Spotify: aumentar ouvintes mensais em ~${growthTarget(ml)}%.`);
+  goals.push(`Spotify: aumentar seguidores em ~${growthTarget(sf)}% (CTA “seguir/salvar” em todo conteúdo).`);
+  goals.push(`Instagram: aumentar seguidores em ~${growthTarget(ig)}% (3–5 posts/semana + stories diários por 7 dias).`);
+  goals.push(`TikTok: aumentar seguidores em ~${growthTarget(tk)}% (1 vídeo/dia por 7 dias com variações do mesmo áudio).`);
+  goals.push(`YouTube: aumentar inscritos em ~${growthTarget(yt)}% (Shorts 3x/semana + 1 vídeo/semana).`);
+  goals.push(`Streams (28 dias): aumentar em ~${growthTarget(s28)}% (rotina + colabs + playlists independentes).`);
+  goals.push(`YouTube views (28 dias): aumentar em ~${growthTarget(yv28)}% (Shorts com gancho + consistência).`);
 
-  goals.push(`Streams (28 dias): aumentar em ~${gS28}% (rotina de conteúdo + colabs + playlists independentes).`);
-  goals.push(`YouTube views (28 dias): aumentar em ~${gYV28}% (Shorts com gancho + títulos curtos + consistência).`);
-
-  // meta de constância
   const targetPosts7 = clamp(Math.max(7, posts7 + 3), 7, 21);
-  goals.push(`Constância: fazer ${targetPosts7} posts nos próximos 7 dias (mínimo 1/dia, com 3 variações do mesmo trecho).`);
+  goals.push(`Constância: fazer ${targetPosts7} posts nos próximos 7 dias (mínimo 1/dia).`);
 
-  // Metas extras: conversão
-  if(ml > 0){
-    const desiredConv = clamp(Math.max(convSpotify, 0.04) + 0.01, 0.04, 0.1);
-    goals.push(`Conversão Spotify: buscar ~${(desiredConv*100).toFixed(1)}% (perfil completo + CTA + destaque do lançamento).`);
+  // Goals específicos por tráfego
+  if(trafficMain === "social"){
+    goals.push("Social: criar 12 variações do MESMO trecho (gancho em 2s) e testar 3 formatos (storytelling, performance, trend).");
+  }
+  if(trafficMain === "playlists"){
+    goals.push("Playlists: fazer 30 abordagens (curadores independentes) + atualizar pitch/presskit + reforçar saves nos primeiros 7 dias.");
+  }
+  if(trafficMain === "algoritmo"){
+    goals.push("Algoritmo: priorizar retenção: conteúdo com refrão nos 2s + CTA salvar/seguir + repetir 3 vezes por semana.");
+  }
+  if(trafficMain === "youtube"){
+    goals.push("YouTube: publicar 9 Shorts (3/semana) + 1 vídeo fixo/semana (lyric ou acústico) com título direto.");
+  }
+  if(trafficMain === "shows"){
+    goals.push("Shows: montar lista de 30 contatos (casas, igrejas, eventos) + kit de show + vídeo curto de palco.");
+  }
+  if(trafficMain === "colabs"){
+    goals.push("Colabs: fechar 2 feats/duetos (mesmo pequenos) e postar 6 conteúdos em conjunto (cross-post).");
+  }
+  if(trafficMain === "ads"){
+    goals.push("Ads: rodar 2 campanhas (descoberta + conversão) com criativos diferentes e UTM/links separados.");
   }
 
-  // Se tudo zero
-  if(ml === 0 && sf === 0 && ig === 0 && tk === 0 && yt === 0){
-    insights.length = 0;
-    insights.push("Você está no ponto zero de métricas. Ótimo: dá para estruturar tudo certo desde o início.");
-    goals.length = 0;
-    goals.push("Criar perfis oficiais (Spotify for Artists / YouTube / Instagram / TikTok) com identidade padronizada.");
-    goals.push("Planejar 1 lançamento (single) e preparar 15 conteúdos curtos do refrão.");
-    goals.push("Executar rotina mínima: 3 posts/semana + 1 live curta/semana por 30 dias.");
+  // Se topTracks existe, meta extra
+  if(topTracks.length){
+    goals.push(`Conteúdo: usar "${topTracks[0]}" como motor e postar 10 variações do trecho mais forte nos próximos 10 dias.`);
+  }
+
+  // Se topCities existe, meta extra local
+  if(topCities.length){
+    goals.push(`Local: criar 1 ação por cidade (creator, rádio, evento, collab). Comece por: ${topCities[0]}.`);
+  }
+
+  // Se topCountries existe, meta extra global
+  if(topCountries.length){
+    const c0 = topCountries[0].toLowerCase();
+    if(c0 !== "brasil" && c0 !== "brazil"){
+      goals.push(`Global: preparar versões/legendas e horários para o país #1 (${topCountries[0]}) e postar 6 conteúdos em 14 dias.`);
+    }else{
+      goals.push("Global: testar 2 conteúdos com legenda em inglês e hashtags internacionais (sem mudar identidade), para abrir porta fora.");
+    }
   }
 
   return { cards, insights, goals };
