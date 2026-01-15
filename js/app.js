@@ -5,6 +5,7 @@ import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 import { buildCompareUIData } from "./core/compare.js";
+
 import {
   loadCampaigns,
   buildCampaign,
@@ -12,12 +13,27 @@ import {
   deleteCampaign,
   findCampaign
 } from "./core/campaigns.js";
-import { buildContentPlan } from "./core/content-plan.js";
 
+import { buildContentPlan } from "./core/content-plan.js";
+import { buildPressKit } from "./core/presskit.js";
+
+import {
+  verifyPin,
+  setAdminPin,
+  normalizeReports,
+  filterAndSort,
+  buildAdminSummary,
+  buildWhatsAppMessage
+} from "./core/admin.js";
+
+/* ----------------------------------------------------------
+  ELEMENTOS / SCREENS
+---------------------------------------------------------- */
 const screens = {
   landing: document.getElementById("screenLanding"),
   wizard: document.getElementById("screenWizard"),
-  report: document.getElementById("screenReport")
+  report: document.getElementById("screenReport"),
+  admin: document.getElementById("screenAdmin")
 };
 
 const btnStart = document.getElementById("btnStart");
@@ -91,7 +107,7 @@ const btnClearCampaigns = document.getElementById("btnClearCampaigns");
 const campaignList = document.getElementById("campaignList");
 const campaignDetail = document.getElementById("campaignDetail");
 
-// ✅ Etapa D — Plano de Conteúdo
+// Etapa D — Plano de Conteúdo
 const cpMetaGoal = document.getElementById("cpMetaGoal");
 const cpMetaTraffic = document.getElementById("cpMetaTraffic");
 const cpMetaStage = document.getElementById("cpMetaStage");
@@ -99,6 +115,44 @@ const cpMetaTrack = document.getElementById("cpMetaTrack");
 const contentPlanGrid = document.getElementById("contentPlanGrid");
 const btnCopyContentPlan = document.getElementById("btnCopyContentPlan");
 
+// Etapa E — Press Kit
+const pkName = document.getElementById("pkName");
+const pkGenre = document.getElementById("pkGenre");
+const pkStage = document.getElementById("pkStage");
+const pkBioShort = document.getElementById("pkBioShort");
+const pkBioLong = document.getElementById("pkBioLong");
+const pkData = document.getElementById("pkData");
+const pkMetrics = document.getElementById("pkMetrics");
+const pkShow = document.getElementById("pkShow");
+const pkCollab = document.getElementById("pkCollab");
+const btnCopyPressKit = document.getElementById("btnCopyPressKit");
+const btnPrintPressKit = document.getElementById("btnPrintPressKit");
+
+let lastPressKit = null;
+
+// Etapa F — Admin
+const btnOpenAdmin = document.getElementById("btnOpenAdmin");
+const btnAdminPin = document.getElementById("btnAdminPin");
+const btnAdminExportAll = document.getElementById("btnAdminExportAll");
+const btnAdminClearAll = document.getElementById("btnAdminClearAll");
+const adminSearch = document.getElementById("adminSearch");
+const adminSort = document.getElementById("adminSort");
+const adminList = document.getElementById("adminList");
+const adminDetail = document.getElementById("adminDetail");
+
+const pinModal = document.getElementById("pinModal");
+const pinInput = document.getElementById("pinInput");
+const btnPinEnter = document.getElementById("btnPinEnter");
+const btnPinCancel = document.getElementById("btnPinCancel");
+
+const pinChangeModal = document.getElementById("pinChangeModal");
+const pinNewInput = document.getElementById("pinNewInput");
+const btnPinSave = document.getElementById("btnPinSave");
+const btnPinClose = document.getElementById("btnPinClose");
+
+/* ----------------------------------------------------------
+  STATE
+---------------------------------------------------------- */
 let state = {
   idx: 0,
   answers: loadAnswers(),
@@ -107,29 +161,41 @@ let state = {
   lastContentPlan: null
 };
 
+let adminState = {
+  selectedId: "",
+  normalized: [],
+  filtered: []
+};
+
 init();
 
+/* ----------------------------------------------------------
+  INIT
+---------------------------------------------------------- */
 function init(){
   bind();
   applyTheme(loadTheme());
   showScreen("landing", false);
-  btnBack.style.visibility = "hidden";
+  if(btnBack) btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
   renderCampaigns();
   clearContentPlan();
+  clearPressKit();
+  adminInit();
 }
 
 function bind(){
-  btnStart.addEventListener("click", ()=> startWizard(false));
-  btnDemoFill.addEventListener("click", ()=> startWizard(true));
-  btnPrev.addEventListener("click", prevQ);
-  btnNext.addEventListener("click", nextQ);
-  btnBack.addEventListener("click", handleBack);
+  btnStart?.addEventListener("click", ()=> startWizard(false));
+  btnDemoFill?.addEventListener("click", ()=> startWizard(true));
+  btnPrev?.addEventListener("click", prevQ);
+  btnNext?.addEventListener("click", nextQ);
+  btnBack?.addEventListener("click", handleBack);
+
   btnReset?.addEventListener("click", resetAll);
   btnEdit?.addEventListener("click", ()=> showScreen("wizard"));
   btnPrint?.addEventListener("click", ()=> window.print());
-  btnTheme.addEventListener("click", toggleTheme);
+  btnTheme?.addEventListener("click", toggleTheme);
 
   btnExportJSON?.addEventListener("click", ()=>{
     if(!state.lastBuiltReport){ toast("Gere um relatório antes."); return; }
@@ -144,6 +210,7 @@ function bind(){
     renderHistory();
     renderCompareSelects();
     clearCompareView();
+    adminRefresh();
     toast("Histórico removido.");
   });
 
@@ -160,8 +227,28 @@ function bind(){
     toast("Campanhas removidas.");
   });
 
-  // ✅ Plano de conteúdo
+  // Conteúdo
   btnCopyContentPlan?.addEventListener("click", copyContentPlan);
+
+  // Press kit
+  btnPrintPressKit?.addEventListener("click", ()=> window.print());
+  btnCopyPressKit?.addEventListener("click", copyPressKit);
+
+  // Admin
+  btnOpenAdmin?.addEventListener("click", ()=> openPinModal());
+  btnAdminPin?.addEventListener("click", ()=> openPinChangeModal());
+  btnAdminExportAll?.addEventListener("click", adminExportAll);
+  btnAdminClearAll?.addEventListener("click", adminClearAll);
+
+  adminSearch?.addEventListener("input", ()=> adminApplyFilterSort());
+  adminSort?.addEventListener("change", ()=> adminApplyFilterSort());
+
+  btnPinEnter?.addEventListener("click", ()=> tryEnterAdmin());
+  btnPinCancel?.addEventListener("click", ()=> closePinModal());
+  pinInput?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") tryEnterAdmin(); });
+
+  btnPinSave?.addEventListener("click", ()=> saveNewPin());
+  btnPinClose?.addEventListener("click", ()=> closePinChangeModal());
 
   window.addEventListener("keydown", (e)=>{
     if(state.lastScreen !== "wizard") return;
@@ -174,28 +261,35 @@ function bind(){
   });
 }
 
+/* ----------------------------------------------------------
+  NAVIGATION
+---------------------------------------------------------- */
 function showScreen(name, pushHistory=true){
-  Object.values(screens).forEach(s=> s.classList.remove("screen--active"));
-  screens[name].classList.add("screen--active");
+  Object.values(screens).forEach(s=> s?.classList?.remove("screen--active"));
+  screens[name]?.classList?.add("screen--active");
   state.lastScreen = name;
-  btnBack.style.visibility = (name === "landing") ? "hidden" : "visible";
+  if(btnBack) btnBack.style.visibility = (name === "landing") ? "hidden" : "visible";
   if(pushHistory) history.pushState({screen:name}, "");
 }
 
 window.addEventListener("popstate", (e)=>{
   const scr = (e.state && e.state.screen) ? e.state.screen : "landing";
-  Object.values(screens).forEach(s=> s.classList.remove("screen--active"));
-  screens[scr].classList.add("screen--active");
+  Object.values(screens).forEach(s=> s?.classList?.remove("screen--active"));
+  screens[scr]?.classList?.add("screen--active");
   state.lastScreen = scr;
-  btnBack.style.visibility = (scr === "landing") ? "hidden" : "visible";
+  if(btnBack) btnBack.style.visibility = (scr === "landing") ? "hidden" : "visible";
 });
 
 function handleBack(){
   if(state.lastScreen === "wizard") showScreen("landing");
   else if(state.lastScreen === "report") showScreen("wizard");
+  else if(state.lastScreen === "admin") showScreen("landing");
   else showScreen("landing");
 }
 
+/* ----------------------------------------------------------
+  WIZARD
+---------------------------------------------------------- */
 function startWizard(withDemo){
   if(withDemo){
     state.answers = demoAnswers();
@@ -216,7 +310,10 @@ function firstUnansweredIndex(){
   return 0;
 }
 
-function prevQ(){ state.idx = Math.max(0, state.idx - 1); renderQuestion(); }
+function prevQ(){
+  state.idx = Math.max(0, state.idx - 1);
+  renderQuestion();
+}
 
 function nextQ(){
   const q = QUESTIONS[state.idx];
@@ -247,26 +344,28 @@ function validateCurrent(q){
 function renderQuestion(){
   const q = QUESTIONS[state.idx];
 
-  qSection.textContent = q.section;
-  qCount.textContent = `${state.idx + 1} / ${QUESTIONS.length}`;
-  qText.textContent = q.text;
-  qHelp.textContent = q.help || "";
+  if(qSection) qSection.textContent = q.section;
+  if(qCount) qCount.textContent = `${state.idx + 1} / ${QUESTIONS.length}`;
+  if(qText) qText.textContent = q.text;
+  if(qHelp) qHelp.textContent = q.help || "";
 
   const pct = Math.round(((state.idx) / (QUESTIONS.length-1)) * 100);
-  progressFill.style.width = `${pct}%`;
-  progressLabel.textContent = `${pct}%`;
+  if(progressFill) progressFill.style.width = `${pct}%`;
+  if(progressLabel) progressLabel.textContent = `${pct}%`;
 
-  btnPrev.disabled = state.idx === 0;
-  btnPrev.style.opacity = btnPrev.disabled ? ".55" : "1";
+  if(btnPrev){
+    btnPrev.disabled = state.idx === 0;
+    btnPrev.style.opacity = btnPrev.disabled ? ".55" : "1";
+  }
 
-  answerArea.innerHTML = "";
+  if(answerArea) answerArea.innerHTML = "";
   if(q.type === "single") renderSingle(q);
   else if(q.type === "multi") renderMulti(q);
   else if(q.type === "textarea") renderTextarea(q);
   else if(q.type === "number") renderNumber(q);
   else renderText(q);
 
-  btnNext.textContent = (state.idx === QUESTIONS.length - 1) ? "Gerar relatório" : "Próximo";
+  if(btnNext) btnNext.textContent = (state.idx === QUESTIONS.length - 1) ? "Gerar relatório" : "Próximo";
 }
 
 function renderSingle(q){
@@ -285,7 +384,7 @@ function renderSingle(q){
       state.answers[q.id] = opt.value;
       renderQuestion();
     });
-    answerArea.appendChild(el);
+    answerArea?.appendChild(el);
   });
 }
 
@@ -308,7 +407,7 @@ function renderMulti(q){
       state.answers[q.id] = next;
       renderQuestion();
     });
-    answerArea.appendChild(el);
+    answerArea?.appendChild(el);
   });
 }
 
@@ -322,7 +421,7 @@ function renderText(q){
   const input = wrap.querySelector("input");
   input.value = state.answers[q.id] || "";
   input.addEventListener("input", ()=> state.answers[q.id] = input.value);
-  answerArea.appendChild(wrap);
+  answerArea?.appendChild(wrap);
   setTimeout(()=> input.focus(), 0);
 }
 
@@ -336,7 +435,7 @@ function renderTextarea(q){
   const ta = wrap.querySelector("textarea");
   ta.value = state.answers[q.id] || "";
   ta.addEventListener("input", ()=> state.answers[q.id] = ta.value);
-  answerArea.appendChild(wrap);
+  answerArea?.appendChild(wrap);
   setTimeout(()=> ta.focus(), 0);
 }
 
@@ -364,107 +463,129 @@ function renderNumber(q){
     state.answers[q.id] = Number.isFinite(v) ? v : min;
   });
 
-  answerArea.appendChild(wrap);
+  answerArea?.appendChild(wrap);
   setTimeout(()=> input.focus(), 0);
 }
 
+/* ----------------------------------------------------------
+  REPORT BUILD
+---------------------------------------------------------- */
 function buildReport(){
   const result = scoreAnswers(state.answers, QUESTIONS);
   const name = safeText(state.answers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
 
-  reportSubtitle.textContent = subtitle;
-  reportSubtitle2.textContent = subtitle;
+  if(reportSubtitle) reportSubtitle.textContent = subtitle;
+  if(reportSubtitle2) reportSubtitle2.textContent = subtitle;
 
-  stageLabel.textContent = result.stage.label;
-  stageLabel2.textContent = result.stage.label;
-  stageHint.textContent = result.stage.hint;
+  if(stageLabel) stageLabel.textContent = result.stage.label;
+  if(stageLabel2) stageLabel2.textContent = result.stage.label;
+  if(stageHint) stageHint.textContent = result.stage.hint;
 
-  overallScore.textContent = String(result.overall);
-  overallScore2.textContent = String(result.overall);
-  nextGoal.textContent = result.insights.nextGoal;
+  if(overallScore) overallScore.textContent = String(result.overall);
+  if(overallScore2) overallScore2.textContent = String(result.overall);
+  if(nextGoal) nextGoal.textContent = result.insights.nextGoal;
 
-  pillarChips.innerHTML = "";
-  Object.entries(result.pillarScores).forEach(([p,val])=>{
-    const meta = pillarMeta(p);
-    const chip = document.createElement("div");
-    chip.className = "chip";
-    chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
-    pillarChips.appendChild(chip);
-  });
+  if(pillarChips){
+    pillarChips.innerHTML = "";
+    Object.entries(result.pillarScores).forEach(([p,val])=>{
+      const meta = pillarMeta(p);
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
+      pillarChips.appendChild(chip);
+    });
+  }
 
-  pillarBars.innerHTML = "";
-  Object.entries(result.pillarScores).forEach(([p,val])=>{
-    const meta = pillarMeta(p);
-    const bar = document.createElement("div");
-    bar.className = "bar";
-    bar.innerHTML = `
-      <div class="bar__label">${escapeHtml(meta.label)}</div>
-      <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
-      <div class="bar__val">${val}</div>
-    `;
-    pillarBars.appendChild(bar);
-  });
+  if(pillarBars){
+    pillarBars.innerHTML = "";
+    Object.entries(result.pillarScores).forEach(([p,val])=>{
+      const meta = pillarMeta(p);
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.innerHTML = `
+        <div class="bar__label">${escapeHtml(meta.label)}</div>
+        <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
+        <div class="bar__val">${val}</div>
+      `;
+      pillarBars.appendChild(bar);
+    });
+  }
 
   const analytics = buildAnalytics(state.answers);
   renderAnalytics(analytics);
 
-  priorities30.innerHTML = "";
-  result.plans.priorities.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    priorities30.appendChild(li);
-  });
-
-  checklist.innerHTML = "";
-  result.plans.checklist.forEach(t=>{
-    const li = document.createElement("li");
-    li.className = "check";
-    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
-    checklist.appendChild(li);
-  });
-
-  timelineMonth.innerHTML = "";
-  result.plans.month.forEach(item=>{
-    const el = document.createElement("div");
-    el.className = "titem";
-    el.innerHTML = `
-      <div class="titem__top">
-        <div class="titem__label">${escapeHtml(item.label)}</div>
-        <div class="titem__when">${escapeHtml(item.when)}</div>
-      </div>
-      <div class="titem__desc">${escapeHtml(item.desc)}</div>
-    `;
-    timelineMonth.appendChild(el);
-  });
-
-  timelineYear.innerHTML = "";
-  result.plans.year.forEach(item=>{
-    const el = document.createElement("div");
-    el.className = "titem";
-    el.innerHTML = `
-      <div class="titem__top">
-        <div class="titem__label">${escapeHtml(item.label)}</div>
-        <div class="titem__when">${escapeHtml(item.when)}</div>
-      </div>
-      <div class="titem__desc">${escapeHtml(item.desc)}</div>
-    `;
-    timelineYear.appendChild(el);
-  });
-
-  recommendations.innerHTML = "";
-  result.plans.recs.forEach(r=>{
-    const el = document.createElement("div");
-    el.className = "rec";
-    el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
-    recommendations.appendChild(el);
-  });
-
-  // ✅ Etapa D: gerar e renderizar plano de conteúdo
+  // Etapa D: Conteúdo
   const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
   state.lastContentPlan = contentPlan;
   renderContentPlan(contentPlan);
+
+  // Etapa E: Press Kit
+  const pressKit = buildPressKit({ answers: state.answers, reportResult: result, analytics });
+  lastPressKit = pressKit;
+  renderPressKit(pressKit);
+
+  if(priorities30){
+    priorities30.innerHTML = "";
+    result.plans.priorities.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      priorities30.appendChild(li);
+    });
+  }
+
+  if(checklist){
+    checklist.innerHTML = "";
+    result.plans.checklist.forEach(t=>{
+      const li = document.createElement("li");
+      li.className = "check";
+      li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
+      checklist.appendChild(li);
+    });
+  }
+
+  if(timelineMonth){
+    timelineMonth.innerHTML = "";
+    result.plans.month.forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "titem";
+      el.innerHTML = `
+        <div class="titem__top">
+          <div class="titem__label">${escapeHtml(item.label)}</div>
+          <div class="titem__when">${escapeHtml(item.when)}</div>
+        </div>
+        <div class="titem__desc">${escapeHtml(item.desc)}</div>
+      `;
+      timelineMonth.appendChild(el);
+    });
+  }
+
+  if(timelineYear){
+    timelineYear.innerHTML = "";
+    result.plans.year.forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "titem";
+      el.innerHTML = `
+        <div class="titem__top">
+          <div class="titem__label">${escapeHtml(item.label)}</div>
+          <div class="titem__when">${escapeHtml(item.when)}</div>
+        </div>
+        <div class="titem__desc">${escapeHtml(item.desc)}</div>
+      `;
+      timelineYear.appendChild(el);
+    });
+  }
+
+  if(recommendations){
+    recommendations.innerHTML = "";
+    result.plans.recs.forEach(r=>{
+      const el = document.createElement("div");
+      el.className = "rec";
+      el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
+      recommendations.appendChild(el);
+    });
+  }
 
   const fullReport = {
     id: uid(),
@@ -474,7 +595,8 @@ function buildReport(){
     answers: state.answers,
     result,
     analytics,
-    contentPlan
+    contentPlan,
+    pressKit
   };
 
   state.lastBuiltReport = fullReport;
@@ -482,42 +604,51 @@ function buildReport(){
   renderHistory();
   renderCompareSelects(true);
   renderCampaigns();
+  adminRefresh();
   toast("Relatório gerado e salvo no histórico.");
 }
 
 function renderAnalytics(a){
-  analyticsCards.innerHTML = "";
-  a.cards.forEach(c=>{
-    const el = document.createElement("div");
-    el.className = "acard";
-    el.innerHTML = `
-      <div class="acard__top">
-        <div class="acard__name">${escapeHtml(c.name)}</div>
-        <div class="acard__tag ${escapeHtml(c.tagType)}">${escapeHtml(c.tag)}</div>
-      </div>
-      <div class="acard__val">${escapeHtml(c.value)}</div>
-      <div class="acard__sub">${escapeHtml(c.sub)}</div>
-      <div class="acard__meter"><div class="acard__fill" style="width:${c.pct}%"></div></div>
-    `;
-    analyticsCards.appendChild(el);
-  });
+  if(analyticsCards){
+    analyticsCards.innerHTML = "";
+    a.cards.forEach(c=>{
+      const el = document.createElement("div");
+      el.className = "acard";
+      el.innerHTML = `
+        <div class="acard__top">
+          <div class="acard__name">${escapeHtml(c.name)}</div>
+          <div class="acard__tag ${escapeHtml(c.tagType)}">${escapeHtml(c.tag)}</div>
+        </div>
+        <div class="acard__val">${escapeHtml(c.value)}</div>
+        <div class="acard__sub">${escapeHtml(c.sub)}</div>
+        <div class="acard__meter"><div class="acard__fill" style="width:${c.pct}%"></div></div>
+      `;
+      analyticsCards.appendChild(el);
+    });
+  }
 
-  analyticsInsights.innerHTML = "";
-  a.insights.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    analyticsInsights.appendChild(li);
-  });
+  if(analyticsInsights){
+    analyticsInsights.innerHTML = "";
+    a.insights.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      analyticsInsights.appendChild(li);
+    });
+  }
 
-  analyticsGoals.innerHTML = "";
-  a.goals.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    analyticsGoals.appendChild(li);
-  });
+  if(analyticsGoals){
+    analyticsGoals.innerHTML = "";
+    a.goals.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      analyticsGoals.appendChild(li);
+    });
+  }
 }
 
-// ✅ Conteúdo
+/* ----------------------------------------------------------
+  CONTEÚDO (ETAPA D)
+---------------------------------------------------------- */
 function clearContentPlan(){
   if(cpMetaGoal) cpMetaGoal.textContent = "Objetivo: —";
   if(cpMetaTraffic) cpMetaTraffic.textContent = "Tráfego: —";
@@ -533,11 +664,12 @@ function renderContentPlan(plan){
     return;
   }
 
-  cpMetaGoal.textContent = `Objetivo: ${safeText(plan.meta.goal || "—")}`;
-  cpMetaTraffic.textContent = `Tráfego: ${safeText(plan.meta.traffic || "—")}`;
-  cpMetaStage.textContent = `Status: ${safeText(plan.meta.stage || "—")}`;
-  cpMetaTrack.textContent = `Motor: ${safeText(plan.meta.track || "—")}`;
+  if(cpMetaGoal) cpMetaGoal.textContent = `Objetivo: ${safeText(plan.meta.goal || "—")}`;
+  if(cpMetaTraffic) cpMetaTraffic.textContent = `Tráfego: ${safeText(plan.meta.traffic || "—")}`;
+  if(cpMetaStage) cpMetaStage.textContent = `Status: ${safeText(plan.meta.stage || "—")}`;
+  if(cpMetaTrack) cpMetaTrack.textContent = `Motor: ${safeText(plan.meta.track || "—")}`;
 
+  if(!contentPlanGrid) return;
   contentPlanGrid.innerHTML = "";
   plan.ideas.forEach(idea=>{
     const el = document.createElement("div");
@@ -588,7 +720,6 @@ async function copyContentPlan(){
     await navigator.clipboard.writeText(text);
     toast("Plano copiado.");
   }catch{
-    // fallback
     try{
       const ta = document.createElement("textarea");
       ta.value = text;
@@ -606,6 +737,83 @@ async function copyContentPlan(){
   }
 }
 
+/* ----------------------------------------------------------
+  PRESS KIT (ETAPA E)
+---------------------------------------------------------- */
+function clearPressKit(){
+  if(pkName) pkName.textContent = "—";
+  if(pkGenre) pkGenre.textContent = "—";
+  if(pkStage) pkStage.textContent = "—";
+  if(pkBioShort) pkBioShort.textContent = "";
+  if(pkBioLong) pkBioLong.textContent = "";
+  if(pkData) pkData.innerHTML = "";
+  if(pkMetrics) pkMetrics.innerHTML = "";
+  if(pkShow) pkShow.textContent = "";
+  if(pkCollab) pkCollab.textContent = "";
+  lastPressKit = null;
+}
+
+function renderPressKit(pk){
+  if(!pk){ clearPressKit(); return; }
+
+  if(pkName) pkName.textContent = pk.meta.name;
+  if(pkGenre) pkGenre.textContent = pk.meta.genre;
+  if(pkStage) pkStage.textContent = pk.meta.stage;
+
+  if(pkBioShort) pkBioShort.textContent = pk.bioShort;
+  if(pkBioLong) pkBioLong.textContent = pk.bioLong;
+
+  if(pkData){
+    pkData.innerHTML = "";
+    pk.dataList.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      pkData.appendChild(li);
+    });
+  }
+
+  if(pkMetrics){
+    pkMetrics.innerHTML = "";
+    pk.metrics.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      pkMetrics.appendChild(li);
+    });
+  }
+
+  if(pkShow) pkShow.textContent = pk.showProposal;
+  if(pkCollab) pkCollab.textContent = pk.collabProposal;
+}
+
+async function copyPressKit(){
+  if(!lastPressKit?.copyText){
+    toast("Gere um relatório para copiar o press kit.");
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(lastPressKit.copyText);
+    toast("Press kit copiado.");
+  }catch{
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = lastPressKit.copyText;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      toast("Press kit copiado.");
+    }catch{
+      toast("Não foi possível copiar. Seu navegador bloqueou a área de transferência.");
+    }
+  }
+}
+
+/* ----------------------------------------------------------
+  HISTÓRICO
+---------------------------------------------------------- */
 function renderHistory(){
   const reports = loadReports();
   renderHistoryList(historyListLanding, reports, true);
@@ -643,15 +851,18 @@ function renderHistoryList(container, reports, isLanding){
 function openReportFromHistory(id){
   const r = findReportById(id);
   if(!r){ toast("Relatório não encontrado."); return; }
+
   state.lastBuiltReport = r;
   state.answers = r.answers || {};
   saveAnswers(state.answers);
+
   buildReportFromStored(r);
   showScreen("report");
+
   renderCompareSelects(true);
   renderCampaigns();
 
-  // conteúdo do histórico (se existir) ou gera de novo
+  // conteúdo do histórico
   if(r.contentPlan?.ideas?.length){
     state.lastContentPlan = r.contentPlan;
     renderContentPlan(r.contentPlan);
@@ -659,6 +870,16 @@ function openReportFromHistory(id){
     const cp = buildContentPlan({ answers: state.answers, reportResult: r.result });
     state.lastContentPlan = cp;
     renderContentPlan(cp);
+  }
+
+  // press kit do histórico
+  if(r.pressKit?.copyText){
+    lastPressKit = r.pressKit;
+    renderPressKit(r.pressKit);
+  }else{
+    const pk = buildPressKit({ answers: state.answers, reportResult: r.result, analytics: r.analytics });
+    lastPressKit = pk;
+    renderPressKit(pk);
   }
 
   toast("Relatório aberto do histórico.");
@@ -676,93 +897,107 @@ function buildReportFromStored(fullReport){
   const stamp = safeText(fullReport.createdAtLabel || "");
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
 
-  reportSubtitle.textContent = subtitle;
-  reportSubtitle2.textContent = subtitle;
+  if(reportSubtitle) reportSubtitle.textContent = subtitle;
+  if(reportSubtitle2) reportSubtitle2.textContent = subtitle;
 
-  stageLabel.textContent = result.stage.label;
-  stageLabel2.textContent = result.stage.label;
-  stageHint.textContent = result.stage.hint;
+  if(stageLabel) stageLabel.textContent = result.stage.label;
+  if(stageLabel2) stageLabel2.textContent = result.stage.label;
+  if(stageHint) stageHint.textContent = result.stage.hint;
 
-  overallScore.textContent = String(result.overall);
-  overallScore2.textContent = String(result.overall);
-  nextGoal.textContent = result.insights.nextGoal;
+  if(overallScore) overallScore.textContent = String(result.overall);
+  if(overallScore2) overallScore2.textContent = String(result.overall);
+  if(nextGoal) nextGoal.textContent = result.insights.nextGoal;
 
-  pillarChips.innerHTML = "";
-  Object.entries(result.pillarScores).forEach(([p,val])=>{
-    const meta = pillarMeta(p);
-    const chip = document.createElement("div");
-    chip.className = "chip";
-    chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
-    pillarChips.appendChild(chip);
-  });
+  if(pillarChips){
+    pillarChips.innerHTML = "";
+    Object.entries(result.pillarScores).forEach(([p,val])=>{
+      const meta = pillarMeta(p);
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
+      pillarChips.appendChild(chip);
+    });
+  }
 
-  pillarBars.innerHTML = "";
-  Object.entries(result.pillarScores).forEach(([p,val])=>{
-    const meta = pillarMeta(p);
-    const bar = document.createElement("div");
-    bar.className = "bar";
-    bar.innerHTML = `
-      <div class="bar__label">${escapeHtml(meta.label)}</div>
-      <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
-      <div class="bar__val">${val}</div>
-    `;
-    pillarBars.appendChild(bar);
-  });
+  if(pillarBars){
+    pillarBars.innerHTML = "";
+    Object.entries(result.pillarScores).forEach(([p,val])=>{
+      const meta = pillarMeta(p);
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.innerHTML = `
+        <div class="bar__label">${escapeHtml(meta.label)}</div>
+        <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
+        <div class="bar__val">${val}</div>
+      `;
+      pillarBars.appendChild(bar);
+    });
+  }
 
   renderAnalytics(analytics);
 
-  priorities30.innerHTML = "";
-  result.plans.priorities.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    priorities30.appendChild(li);
-  });
+  if(priorities30){
+    priorities30.innerHTML = "";
+    result.plans.priorities.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      priorities30.appendChild(li);
+    });
+  }
 
-  checklist.innerHTML = "";
-  result.plans.checklist.forEach(t=>{
-    const li = document.createElement("li");
-    li.className = "check";
-    li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
-    checklist.appendChild(li);
-  });
+  if(checklist){
+    checklist.innerHTML = "";
+    result.plans.checklist.forEach(t=>{
+      const li = document.createElement("li");
+      li.className = "check";
+      li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
+      checklist.appendChild(li);
+    });
+  }
 
-  timelineMonth.innerHTML = "";
-  result.plans.month.forEach(item=>{
-    const el = document.createElement("div");
-    el.className = "titem";
-    el.innerHTML = `
-      <div class="titem__top">
-        <div class="titem__label">${escapeHtml(item.label)}</div>
-        <div class="titem__when">${escapeHtml(item.when)}</div>
-      </div>
-      <div class="titem__desc">${escapeHtml(item.desc)}</div>
-    `;
-    timelineMonth.appendChild(el);
-  });
+  if(timelineMonth){
+    timelineMonth.innerHTML = "";
+    result.plans.month.forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "titem";
+      el.innerHTML = `
+        <div class="titem__top">
+          <div class="titem__label">${escapeHtml(item.label)}</div>
+          <div class="titem__when">${escapeHtml(item.when)}</div>
+        </div>
+        <div class="titem__desc">${escapeHtml(item.desc)}</div>
+      `;
+      timelineMonth.appendChild(el);
+    });
+  }
 
-  timelineYear.innerHTML = "";
-  result.plans.year.forEach(item=>{
-    const el = document.createElement("div");
-    el.className = "titem";
-    el.innerHTML = `
-      <div class="titem__top">
-        <div class="titem__label">${escapeHtml(item.label)}</div>
-        <div class="titem__when">${escapeHtml(item.when)}</div>
-      </div>
-      <div class="titem__desc">${escapeHtml(item.desc)}</div>
-    `;
-    timelineYear.appendChild(el);
-  });
+  if(timelineYear){
+    timelineYear.innerHTML = "";
+    result.plans.year.forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "titem";
+      el.innerHTML = `
+        <div class="titem__top">
+          <div class="titem__label">${escapeHtml(item.label)}</div>
+          <div class="titem__when">${escapeHtml(item.when)}</div>
+        </div>
+        <div class="titem__desc">${escapeHtml(item.desc)}</div>
+      `;
+      timelineYear.appendChild(el);
+    });
+  }
 
-  recommendations.innerHTML = "";
-  result.plans.recs.forEach(r=>{
-    const el = document.createElement("div");
-    el.className = "rec";
-    el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
-    recommendations.appendChild(el);
-  });
+  if(recommendations){
+    recommendations.innerHTML = "";
+    result.plans.recs.forEach(r=>{
+      const el = document.createElement("div");
+      el.className = "rec";
+      el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
+      recommendations.appendChild(el);
+    });
+  }
 
-  // Etapa D (histórico)
+  // Conteúdo
   if(fullReport.contentPlan?.ideas?.length){
     state.lastContentPlan = fullReport.contentPlan;
     renderContentPlan(fullReport.contentPlan);
@@ -772,12 +1007,26 @@ function buildReportFromStored(fullReport){
     renderContentPlan(cp);
   }
 
+  // Press kit
+  if(fullReport.pressKit?.copyText){
+    lastPressKit = fullReport.pressKit;
+    renderPressKit(fullReport.pressKit);
+  }else{
+    const pk = buildPressKit({ answers: state.answers, reportResult: result, analytics });
+    lastPressKit = pk;
+    renderPressKit(pk);
+  }
+
   renderHistory();
+  adminRefresh();
 }
 
-// Compare
+/* ----------------------------------------------------------
+  COMPARE
+---------------------------------------------------------- */
 function renderCompareSelects(autoPick=false){
   if(!compareA || !compareB) return;
+
   const reports = loadReports();
 
   const makeOpt = (id, label)=>{
@@ -832,40 +1081,53 @@ function runCompare(){
   const data = buildCompareUIData(reports, idA, idB);
   if(!data.ok){ toast(data.message || "Não foi possível comparar."); return; }
 
-  cmpScore.textContent = `${String(data.cards.score.a)} → ${String(data.cards.score.b)}`;
-  cmpMl.textContent = `${formatNumber(data.cards.ml.a)} → ${formatNumber(data.cards.ml.b)}`;
-  cmpSf.textContent = `${formatNumber(data.cards.sf.a)} → ${formatNumber(data.cards.sf.b)}`;
+  if(cmpScore) cmpScore.textContent = `${String(data.cards.score.a)} → ${String(data.cards.score.b)}`;
+  if(cmpMl) cmpMl.textContent = `${formatNumber(data.cards.ml.a)} → ${formatNumber(data.cards.ml.b)}`;
+  if(cmpSf) cmpSf.textContent = `${formatNumber(data.cards.sf.a)} → ${formatNumber(data.cards.sf.b)}`;
 
-  cmpScoreDelta.textContent = data.cards.score.delta.text;
-  cmpScoreDelta.className = data.cards.score.delta.cls;
+  if(cmpScoreDelta){
+    cmpScoreDelta.textContent = data.cards.score.delta.text;
+    cmpScoreDelta.className = data.cards.score.delta.cls;
+  }
 
-  cmpMlDelta.textContent = data.cards.ml.delta.text;
-  cmpMlDelta.className = data.cards.ml.delta.cls;
+  if(cmpMlDelta){
+    cmpMlDelta.textContent = data.cards.ml.delta.text;
+    cmpMlDelta.className = data.cards.ml.delta.cls;
+  }
 
-  cmpSfDelta.textContent = data.cards.sf.delta.text;
-  cmpSfDelta.className = data.cards.sf.delta.cls;
+  if(cmpSfDelta){
+    cmpSfDelta.textContent = data.cards.sf.delta.text;
+    cmpSfDelta.className = data.cards.sf.delta.cls;
+  }
 
-  sparkScore.innerHTML = data.sparks.score;
-  sparkMl.innerHTML = data.sparks.ml;
-  sparkSf.innerHTML = data.sparks.sf;
+  if(sparkScore) sparkScore.innerHTML = data.sparks.score;
+  if(sparkMl) sparkMl.innerHTML = data.sparks.ml;
+  if(sparkSf) sparkSf.innerHTML = data.sparks.sf;
 
-  compareInsights.innerHTML = "";
-  data.insights.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    compareInsights.appendChild(li);
-  });
+  if(compareInsights){
+    compareInsights.innerHTML = "";
+    data.insights.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      compareInsights.appendChild(li);
+    });
+  }
 
-  compareActions.innerHTML = "";
-  data.actions.forEach(t=>{
-    const li = document.createElement("li");
-    li.textContent = t;
-    compareActions.appendChild(li);
-  });
+  if(compareActions){
+    compareActions.innerHTML = "";
+    data.actions.forEach(t=>{
+      const li = document.createElement("li");
+      li.textContent = t;
+      compareActions.appendChild(li);
+    });
+  }
 
   toast("Comparação atualizada.");
 }
 
+/* ----------------------------------------------------------
+  RESET
+---------------------------------------------------------- */
 function resetAll(){
   if(!confirm("Limpar todas as respostas deste dispositivo?")) return;
   state.answers = {};
@@ -875,7 +1137,9 @@ function resetAll(){
   toast("Respostas removidas.");
 }
 
-// Campanhas
+/* ----------------------------------------------------------
+  CAMPANHAS
+---------------------------------------------------------- */
 function createCampaign(){
   const type = campType?.value || "single";
   const name = safeText(campName?.value || "");
@@ -990,16 +1254,207 @@ function hideCampaignDetail(){
   campaignDetail.innerHTML = "";
 }
 
-// Storage: answers
+/* ----------------------------------------------------------
+  ADMIN (ETAPA F)
+---------------------------------------------------------- */
+function adminInit(){
+  adminRefresh();
+}
+
+function adminRefresh(){
+  const reports = loadReports();
+  adminState.normalized = normalizeReports(reports);
+  adminApplyFilterSort();
+}
+
+function adminApplyFilterSort(){
+  const query = adminSearch?.value || "";
+  const sortKey = adminSort?.value || "new";
+  adminState.filtered = filterAndSort(adminState.normalized, query, sortKey);
+  renderAdminList();
+  renderAdminDetail();
+}
+
+function renderAdminList(){
+  if(!adminList) return;
+
+  if(!adminState.filtered.length){
+    adminList.innerHTML = `<div class="historyEmpty">Nenhum relatório encontrado.</div>`;
+    return;
+  }
+
+  adminList.innerHTML = "";
+  adminState.filtered.forEach(item=>{
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "adminItem";
+    el.innerHTML = `
+      <div class="adminItemTop">
+        <div>
+          <div class="adminItemName">${escapeHtml(item.name)}</div>
+          <div class="adminItemMeta">${escapeHtml(item.created)} • ${escapeHtml(item.stage)}</div>
+        </div>
+        <div class="adminItemRight">
+          <div class="adminScore">${String(item.score)}</div>
+          <div class="adminTag">Score</div>
+        </div>
+      </div>
+    `;
+    el.addEventListener("click", ()=>{
+      adminState.selectedId = item.id;
+      renderAdminDetail();
+    });
+    adminList.appendChild(el);
+  });
+}
+
+function renderAdminDetail(){
+  if(!adminDetail) return;
+
+  const id = adminState.selectedId;
+  const item = adminState.normalized.find(x=>x.id===id);
+
+  if(!item){
+    adminDetail.innerHTML = `<div class="historyEmpty">Selecione um relatório na lista.</div>`;
+    return;
+  }
+
+  const summary = buildAdminSummary(item);
+  const msg = buildWhatsAppMessage(item);
+
+  adminDetail.innerHTML = `
+    <div class="adminCard">
+      <div class="adminCardTitle">Resumo</div>
+      <div class="adminCardBody">${escapeHtml(summary)}</div>
+    </div>
+
+    <div class="adminCard">
+      <div class="adminCardTitle">Mensagem pronta (WhatsApp)</div>
+      <div class="adminCardBody">${escapeHtml(msg)}</div>
+    </div>
+
+    <div class="adminBtns">
+      <button id="btnAdminOpenReport" class="btn btn--primary">Abrir relatório</button>
+      <button id="btnAdminCopyMsg" class="btn btn--ghost">Copiar mensagem</button>
+      <button id="btnAdminExportOne" class="btn btn--ghost">Exportar JSON</button>
+    </div>
+  `;
+
+  document.getElementById("btnAdminOpenReport")?.addEventListener("click", ()=>{
+    openReportFromHistory(item.id);
+    showScreen("report");
+  });
+
+  document.getElementById("btnAdminExportOne")?.addEventListener("click", ()=>{
+    downloadJSON(`vale-admin-${slug(item.name)}-${item.id}.json`, item.raw);
+    toast("JSON exportado.");
+  });
+
+  document.getElementById("btnAdminCopyMsg")?.addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(msg);
+      toast("Mensagem copiada.");
+    }catch{
+      toast("Não foi possível copiar. Navegador bloqueou a área de transferência.");
+    }
+  });
+}
+
+function adminExportAll(){
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    reports: loadReports(),
+    campaigns: loadCampaigns(),
+    admin: { pin: "hidden" }
+  };
+  downloadJSON(`vale-admin-export-${new Date().toISOString().slice(0,10)}.json`, payload);
+  toast("Exportação completa gerada.");
+}
+
+function adminClearAll(){
+  if(!confirm("Isso vai apagar relatórios e campanhas deste dispositivo. Continuar?")) return;
+  clearReports();
+  const all = loadCampaigns();
+  all.forEach(c => deleteCampaign(c.id));
+  renderHistory();
+  renderCompareSelects();
+  renderCampaigns();
+  adminRefresh();
+  toast("Tudo removido deste dispositivo.");
+}
+
+/* ----------------------------------------------------------
+  PIN MODAL
+---------------------------------------------------------- */
+function openPinModal(){
+  if(!pinModal) return;
+  pinModal.classList.add("pinModal--on");
+  pinModal.setAttribute("aria-hidden","false");
+  if(pinInput){
+    pinInput.value = "";
+    setTimeout(()=> pinInput.focus(), 50);
+  }
+}
+
+function closePinModal(){
+  if(!pinModal) return;
+  pinModal.classList.remove("pinModal--on");
+  pinModal.setAttribute("aria-hidden","true");
+}
+
+function tryEnterAdmin(){
+  const pin = safeText(pinInput?.value || "");
+  if(!pin){ toast("Digite o PIN."); return; }
+  if(!verifyPin(pin)){ toast("PIN incorreto."); return; }
+  closePinModal();
+  adminRefresh();
+  showScreen("admin");
+  toast("Admin aberto.");
+}
+
+function openPinChangeModal(){
+  if(!pinChangeModal) return;
+  pinChangeModal.classList.add("pinModal--on");
+  pinChangeModal.setAttribute("aria-hidden","false");
+  if(pinNewInput){
+    pinNewInput.value = "";
+    setTimeout(()=> pinNewInput.focus(), 50);
+  }
+}
+
+function closePinChangeModal(){
+  if(!pinChangeModal) return;
+  pinChangeModal.classList.remove("pinModal--on");
+  pinChangeModal.setAttribute("aria-hidden","true");
+}
+
+function saveNewPin(){
+  const pin = safeText(pinNewInput?.value || "");
+  const res = setAdminPin(pin);
+  if(!res.ok){
+    toast(res.error || "PIN inválido.");
+    return;
+  }
+  closePinChangeModal();
+  toast("PIN atualizado.");
+}
+
+/* ----------------------------------------------------------
+  STORAGE: ANSWERS
+---------------------------------------------------------- */
 function loadAnswers(){
   try{
     const raw = localStorage.getItem("vale_cm_answers");
     return raw ? JSON.parse(raw) : {};
-  }catch{ return {}; }
+  }catch{
+    return {};
+  }
 }
 
 function saveAnswers(obj){
-  try{ localStorage.setItem("vale_cm_answers", JSON.stringify(obj)); }catch{}
+  try{
+    localStorage.setItem("vale_cm_answers", JSON.stringify(obj));
+  }catch{}
 }
 
 function demoAnswers(){
@@ -1041,22 +1496,30 @@ function demoAnswers(){
   };
 }
 
-// Theme
+/* ----------------------------------------------------------
+  THEME
+---------------------------------------------------------- */
 function loadTheme(){
   const t = localStorage.getItem("vale_cm_theme");
   return (t === "light" || t === "dark") ? t : "dark";
 }
+
 function applyTheme(t){
   document.documentElement.setAttribute("data-theme", t);
   localStorage.setItem("vale_cm_theme", t);
-  btnTheme.querySelector(".icon").textContent = (t === "dark") ? "☾" : "☀";
+  const icon = btnTheme?.querySelector(".icon");
+  if(icon) icon.textContent = (t === "dark") ? "☾" : "☀";
 }
+
 function toggleTheme(){
   const cur = document.documentElement.getAttribute("data-theme") || "dark";
   applyTheme(cur === "dark" ? "light" : "dark");
   toast("Tema atualizado.");
 }
 
+/* ----------------------------------------------------------
+  HELPERS
+---------------------------------------------------------- */
 function slug(s){
   return safeText(s)
     .toLowerCase()
