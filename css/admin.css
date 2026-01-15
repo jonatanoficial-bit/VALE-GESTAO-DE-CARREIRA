@@ -1,0 +1,301 @@
+/* Vale Produção — Admin Panel (Etapa F) */
+
+.landingAdminRow{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-top:14px;
+}
+
+.adminWrap{
+  padding: 18px 14px 40px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.adminHeader{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 14px;
+  flex-wrap:wrap;
+  margin-bottom: 14px;
+}
+
+.adminKicker{
+  font-weight: 1100;
+  color: var(--muted2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.adminH1{
+  font-weight: 1200;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.adminSub{
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.adminActions{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content:flex-end;
+}
+
+.adminGrid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 980px){
+  .adminGrid{
+    grid-template-columns: 1.1fr .9fr;
+  }
+}
+
+.adminPanel{
+  border-radius: 22px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.10);
+  padding: 14px;
+  box-shadow: var(--shadow2);
+}
+
+html[data-theme="light"] .adminPanel{
+  background: rgba(255,255,255,.96);
+}
+
+.adminPanelTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.adminPanelTitle{
+  font-weight: 1200;
+  font-size: 16px;
+}
+
+.adminPanelDesc{
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.adminFilters{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.adminInput, .adminSelect{
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  color: var(--text);
+  padding: 12px 12px;
+  font-weight: 1000;
+  outline: none;
+}
+
+html[data-theme="light"] .adminInput,
+html[data-theme="light"] .adminSelect{
+  background: #fff;
+}
+
+@media (min-width: 560px){
+  .adminInput{ width: 62%; }
+  .adminSelect{ width: 36%; }
+}
+
+.adminList{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.adminItem{
+  width:100%;
+  text-align:left;
+  border-radius: 18px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  color: var(--text);
+  padding: 12px;
+  box-shadow: var(--shadow2);
+  cursor:pointer;
+}
+
+html[data-theme="light"] .adminItem{
+  background: #fff;
+}
+
+.adminItemTop{
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  align-items:flex-start;
+}
+
+.adminItemName{
+  font-weight: 1200;
+}
+
+.adminItemMeta{
+  margin-top: 6px;
+  font-weight: 900;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.adminItemRight{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap: 6px;
+}
+
+.adminScore{
+  font-weight: 1200;
+  font-size: 16px;
+}
+
+.adminTag{
+  font-weight: 1100;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.adminDetail{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+.adminCard{
+  border-radius: 18px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  padding: 12px;
+  box-shadow: var(--shadow2);
+}
+
+html[data-theme="light"] .adminCard{
+  background: #fff;
+}
+
+.adminCardTitle{
+  font-weight: 1200;
+  margin-bottom: 6px;
+}
+
+.adminCardBody{
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.adminBtns{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  justify-content:flex-end;
+}
+
+.adminFooter{
+  margin-top: 12px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+/* PIN modal */
+.pinModal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 99;
+}
+
+.pinModal.pinModal--on{
+  display:flex;
+}
+
+.pinCard{
+  width: min(520px, 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(217,180,92,.18);
+  background: rgba(15,15,15,.96);
+  padding: 14px;
+  box-shadow: var(--shadow2);
+}
+
+html[data-theme="light"] .pinCard{
+  background: rgba(255,255,255,.98);
+}
+
+.pinTop{
+  margin-bottom: 12px;
+}
+
+.pinTitle{
+  font-weight: 1200;
+  font-size: 16px;
+}
+
+.pinSub{
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.pinForm{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pinInput{
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(217,180,92,.14);
+  background: rgba(0,0,0,.08);
+  color: var(--text);
+  padding: 12px 12px;
+  font-weight: 1100;
+  outline: none;
+}
+
+html[data-theme="light"] .pinInput{
+  background: #fff;
+}
+
+.pinHint{
+  margin-top: 10px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 12px;
+}
