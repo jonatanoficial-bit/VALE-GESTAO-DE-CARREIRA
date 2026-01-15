@@ -10,9 +10,12 @@
   <!-- CSS base (premium) -->
   <link rel="stylesheet" href="./css/styles.css?v=11" />
   <link rel="stylesheet" href="./css/desktop-fix.css?v=11" />
+
   <!-- Add-ons seguros -->
   <link rel="stylesheet" href="./css/campaigns.css?v=11" />
   <link rel="stylesheet" href="./css/content-plan.css?v=11" />
+  <link rel="stylesheet" href="./css/presskit.css?v=11" />
+  <link rel="stylesheet" href="./css/admin.css?v=11" />
 </head>
 
 <body>
@@ -77,6 +80,11 @@
               <div id="historyListLanding" class="historyList">
                 <div class="historyEmpty">Ainda não há relatórios salvos.</div>
               </div>
+            </div>
+
+            <div class="landingAdminRow">
+              <button id="btnOpenAdmin" class="btn btn--ghost">Área Vale (Admin)</button>
+              <button id="btnAdminPin" class="btn btn--ghost">Alterar PIN</button>
             </div>
 
             <div class="fineprint">
@@ -188,66 +196,6 @@
           </div>
 
           <div class="panel">
-            <div class="panel__kicker">Evolução</div>
-            <div class="panel__title">Comparar relatórios</div>
-            <div class="panel__desc">
-              Selecione dois relatórios do histórico e veja o que melhorou e o que precisa de ajuste.
-            </div>
-
-            <div class="compareRow">
-              <div class="compareField">
-                <div class="compareLabel">Relatório A</div>
-                <select id="compareA" class="select"></select>
-              </div>
-              <div class="compareField">
-                <div class="compareLabel">Relatório B</div>
-                <select id="compareB" class="select"></select>
-              </div>
-              <button id="btnCompare" class="btn btn--primary">Comparar</button>
-            </div>
-
-            <div class="compareGrid">
-              <div class="cmpCard">
-                <div class="cmpCard__top">
-                  <div class="cmpCard__name">Score</div>
-                  <div id="cmpScoreDelta" class="delta delta--neutral">—</div>
-                </div>
-                <div id="cmpScore" class="cmpCard__val">—</div>
-                <div id="sparkScore" class="spark"></div>
-              </div>
-
-              <div class="cmpCard">
-                <div class="cmpCard__top">
-                  <div class="cmpCard__name">Ouvintes mensais</div>
-                  <div id="cmpMlDelta" class="delta delta--neutral">—</div>
-                </div>
-                <div id="cmpMl" class="cmpCard__val">—</div>
-                <div id="sparkMl" class="spark"></div>
-              </div>
-
-              <div class="cmpCard">
-                <div class="cmpCard__top">
-                  <div class="cmpCard__name">Seguidores Spotify</div>
-                  <div id="cmpSfDelta" class="delta delta--neutral">—</div>
-                </div>
-                <div id="cmpSf" class="cmpCard__val">—</div>
-                <div id="sparkSf" class="spark"></div>
-              </div>
-            </div>
-
-            <div class="compareNotes">
-              <div class="abox">
-                <div class="abox__title">Leitura rápida</div>
-                <ul id="compareInsights" class="alist"></ul>
-              </div>
-              <div class="abox">
-                <div class="abox__title">Ações recomendadas</div>
-                <ul id="compareActions" class="alist"></ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
             <div class="panel__kicker">Métricas & Analytics</div>
             <div class="panel__title">Painel de performance</div>
             <div class="panel__desc">
@@ -290,6 +238,60 @@
             </div>
 
             <div id="contentPlanGrid" class="contentPlanGrid"></div>
+          </div>
+
+          <!-- ✅ NOVO (ETAPA E): Press Kit -->
+          <div class="panel">
+            <div class="panel__kicker">Press Kit</div>
+            <div class="panel__title">Material profissional</div>
+            <div class="panel__desc">
+              Use este material para enviar a curadores, produtores, imprensa ou parceiros.
+            </div>
+
+            <div class="presskitTop">
+              <div class="pkMeta">
+                <div id="pkName" class="pkBadge">—</div>
+                <div id="pkGenre" class="pkBadge">—</div>
+                <div id="pkStage" class="pkBadge">—</div>
+              </div>
+
+              <div class="presskitActions">
+                <button id="btnCopyPressKit" class="smallBtn smallBtn--primary">Copiar press kit</button>
+                <button id="btnPrintPressKit" class="smallBtn">Baixar PDF</button>
+              </div>
+            </div>
+
+            <div class="presskitGrid">
+              <div class="pkCard">
+                <div class="pkTitle">Bio curta</div>
+                <div id="pkBioShort" class="pkBody"></div>
+              </div>
+
+              <div class="pkCard">
+                <div class="pkTitle">Bio longa</div>
+                <div id="pkBioLong" class="pkBody"></div>
+              </div>
+
+              <div class="pkCard">
+                <div class="pkTitle">Dados do artista</div>
+                <ul id="pkData" class="pkList"></ul>
+              </div>
+
+              <div class="pkCard">
+                <div class="pkTitle">Métricas principais</div>
+                <ul id="pkMetrics" class="pkList"></ul>
+              </div>
+
+              <div class="pkCard">
+                <div class="pkTitle">Proposta para shows</div>
+                <div id="pkShow" class="pkBody"></div>
+              </div>
+
+              <div class="pkCard">
+                <div class="pkTitle">Proposta para colaborações</div>
+                <div id="pkCollab" class="pkBody"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Campanhas -->
@@ -415,9 +417,105 @@
         </div>
       </section>
 
+      <!-- ✅ NOVO (ETAPA F): Admin Vale -->
+      <section id="screenAdmin" class="screen">
+        <div class="adminWrap">
+          <div class="adminHeader">
+            <div class="adminTitle">
+              <div class="adminKicker">Vale Produção</div>
+              <div class="adminH1">Painel Admin</div>
+              <div class="adminSub">Controle local (neste dispositivo) • Relatórios • Evolução • Exportações</div>
+            </div>
+
+            <div class="adminActions">
+              <button id="btnAdminExportAll" class="btn btn--ghost">Exportar tudo (JSON)</button>
+              <button id="btnAdminClearAll" class="dangerbtn">Limpar tudo</button>
+            </div>
+          </div>
+
+          <div class="adminGrid">
+            <div class="adminPanel">
+              <div class="adminPanelTop">
+                <div>
+                  <div class="adminPanelTitle">Relatórios</div>
+                  <div class="adminPanelDesc">Filtre, abra e gere mensagem pronta de atendimento.</div>
+                </div>
+              </div>
+
+              <div class="adminFilters">
+                <input id="adminSearch" class="adminInput" type="text" placeholder="Buscar por artista…" />
+                <select id="adminSort" class="adminSelect">
+                  <option value="new">Mais recentes</option>
+                  <option value="old">Mais antigos</option>
+                  <option value="scoreHigh">Score (alto → baixo)</option>
+                  <option value="scoreLow">Score (baixo → alto)</option>
+                  <option value="name">Nome (A → Z)</option>
+                </select>
+              </div>
+
+              <div id="adminList" class="adminList"></div>
+            </div>
+
+            <div class="adminPanel">
+              <div class="adminPanelTop">
+                <div>
+                  <div class="adminPanelTitle">Detalhes</div>
+                  <div class="adminPanelDesc">Resumo e ações para atendimento rápido.</div>
+                </div>
+              </div>
+
+              <div id="adminDetail" class="adminDetail">
+                <div class="historyEmpty">Selecione um relatório na lista.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="adminFooter">
+            Admin local • Para multiusuário (Etapa G) será necessário backend/login.
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- PIN Modal (admin) -->
+    <div id="pinModal" class="pinModal" aria-hidden="true">
+      <div class="pinCard">
+        <div class="pinTop">
+          <div class="pinTitle">Área Vale (Admin)</div>
+          <div class="pinSub">Digite o PIN para acessar.</div>
+        </div>
+
+        <div class="pinForm">
+          <input id="pinInput" class="pinInput" type="password" inputmode="numeric" placeholder="PIN" />
+          <button id="btnPinEnter" class="btn btn--primary">Entrar</button>
+          <button id="btnPinCancel" class="btn btn--ghost">Cancelar</button>
+        </div>
+
+        <div class="pinHint">PIN padrão: <strong>2026</strong> (troque quando quiser)</div>
+      </div>
+    </div>
+
+    <!-- PIN Change Modal -->
+    <div id="pinChangeModal" class="pinModal" aria-hidden="true">
+      <div class="pinCard">
+        <div class="pinTop">
+          <div class="pinTitle">Alterar PIN Admin</div>
+          <div class="pinSub">Defina um novo PIN (4 a 10 dígitos).</div>
+        </div>
+
+        <div class="pinForm">
+          <input id="pinNewInput" class="pinInput" type="password" inputmode="numeric" placeholder="Novo PIN" />
+          <button id="btnPinSave" class="btn btn--primary">Salvar</button>
+          <button id="btnPinClose" class="btn btn--ghost">Cancelar</button>
+        </div>
+
+        <div class="pinHint">Este PIN fica salvo apenas neste dispositivo.</div>
+      </div>
+    </div>
+
   </div>
 
   <script type="module" src="./js/app.js?v=11"></script>
