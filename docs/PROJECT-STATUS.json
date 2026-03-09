@@ -1,0 +1,37 @@
+{
+  "build": "BUILD 2026-03-06 12:53 -03",
+  "completion_pct": 64,
+  "current_milestone": "Etapa 3 de 7 · Premium Beta Offline",
+  "deploy_targets": [
+    "GitHub Pages",
+    "Vercel"
+  ],
+  "done": [
+    "Visual premium reforçado",
+    "Relatório executivo com IA estratégica local v2",
+    "Plano 90 dias",
+    "Comparação entre relatórios",
+    "Manifest + service worker",
+    "Build info e progresso do projeto",
+    "Documentação de handoff para equipe"
+  ],
+  "missing": [
+    "Autenticação e multiusuário",
+    "Banco de dados remoto",
+    "Cobrança / planos",
+    "PDF server-side",
+    "Internacionalização completa",
+    "Conectores Spotify/YouTube/Meta",
+    "IA em nuvem"
+  ],
+  "total_evolution_stages": 7,
+  "current_stage_number": 3,
+  "dlc_tracks": [
+    "DLC Marketing & Ads",
+    "DLC Shows & Booking",
+    "DLC Internacional",
+    "DLC Monetização",
+    "DLC CRM / Comunidade",
+    "DLC IA Cloud Premium"
+  ]
+}

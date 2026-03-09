@@ -1,5 +1,6 @@
 // js/app.js
 import { QUESTIONS } from "./data/questions.js";
+import { BUILD_INFO } from "./data/build-info.js";
 import { scoreAnswers, pillarMeta } from "./core/report.js";
 import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
@@ -65,6 +66,24 @@ const stageHint = document.getElementById("stageHint");
 const overallScore = document.getElementById("overallScore");
 const overallScore2 = document.getElementById("overallScore2");
 const nextGoal = document.getElementById("nextGoal");
+
+const buildLabelLanding = document.getElementById("buildLabelLanding");
+const projectCompletionLanding = document.getElementById("projectCompletionLanding");
+const projectStageLanding = document.getElementById("projectStageLanding");
+const deployTargetsLanding = document.getElementById("deployTargetsLanding");
+const buildLabelReport = document.getElementById("buildLabelReport");
+const projectCompletionReport = document.getElementById("projectCompletionReport");
+const projectStageReport = document.getElementById("projectStageReport");
+const executiveSummary = document.getElementById("executiveSummary");
+const profileLabel = document.getElementById("profileLabel");
+const profileSummary = document.getElementById("profileSummary");
+const readinessGrid = document.getElementById("readinessGrid");
+const strengthList = document.getElementById("strengthList");
+const riskList = document.getElementById("riskList");
+const opportunityList = document.getElementById("opportunityList");
+const quickWinList = document.getElementById("quickWinList");
+const roadmap90 = document.getElementById("roadmap90");
+const projectBuildFoot = document.getElementById("projectBuildFoot");
 
 const pillarChips = document.getElementById("pillarChips");
 const pillarBars = document.getElementById("pillarBars");
@@ -174,6 +193,7 @@ init();
 ---------------------------------------------------------- */
 function init(){
   bind();
+  applyBuildInfo();
   applyTheme(loadTheme());
   showScreen("landing", false);
   if(btnBack) btnBack.style.visibility = "hidden";
@@ -183,6 +203,7 @@ function init(){
   clearContentPlan();
   clearPressKit();
   adminInit();
+  registerServiceWorker();
 }
 
 function bind(){
@@ -200,7 +221,7 @@ function bind(){
   btnExportJSON?.addEventListener("click", ()=>{
     if(!state.lastBuiltReport){ toast("Gere um relatório antes."); return; }
     const name = safeText(state.lastBuiltReport.artistName || "relatorio");
-    downloadJSON(`vale-relatorio-${slug(name)}.json`, state.lastBuiltReport);
+    downloadJSON(`vale-relatorio-${slug(name)}-${BUILD_INFO.buildSlug}.json`, state.lastBuiltReport);
     toast("JSON exportado.");
   });
 
@@ -467,14 +488,68 @@ function renderNumber(q){
   setTimeout(()=> input.focus(), 0);
 }
 
+
 /* ----------------------------------------------------------
   REPORT BUILD
 ---------------------------------------------------------- */
 function buildReport(){
   const result = scoreAnswers(state.answers, QUESTIONS);
+  const analytics = buildAnalytics(state.answers);
+  const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
+  const pressKit = buildPressKit({ answers: state.answers, reportResult: result, analytics });
+
   const name = safeText(state.answers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
+
+  const fullReport = {
+    id: uid(),
+    createdAt: new Date().toISOString(),
+    createdAtLabel: stamp,
+    artistName: name,
+    answers: { ...state.answers },
+    result,
+    analytics,
+    contentPlan,
+    pressKit,
+    build: { ...BUILD_INFO }
+  };
+
+  state.lastBuiltReport = fullReport;
+  applyReportView(fullReport);
+  addReport(fullReport);
+  renderHistory();
+  renderCompareSelects(true);
+  renderCampaigns();
+  adminRefresh();
+  toast("Relatório gerado e salvo no histórico.");
+}
+
+function applyReportView(fullReport){
+  const result = fullReport?.result?.diagnostics ? fullReport.result : scoreAnswers(state.answers, QUESTIONS);
+  const analytics = fullReport?.analytics || buildAnalytics(state.answers);
+  const contentPlan = fullReport?.contentPlan?.ideas?.length
+    ? fullReport.contentPlan
+    : buildContentPlan({ answers: state.answers, reportResult: result });
+  const pressKit = fullReport?.pressKit?.copyText
+    ? fullReport.pressKit
+    : buildPressKit({ answers: state.answers, reportResult: result, analytics });
+  const buildMeta = fullReport?.build || BUILD_INFO;
+
+  const name = safeText(fullReport?.artistName || state.answers.artist_name || "Artista");
+  const stamp = safeText(fullReport?.createdAtLabel || new Date().toLocaleString("pt-BR"));
   const subtitle = `Relatório gerado para ${name} • ${stamp}`;
+
+  state.lastBuiltReport = {
+    ...fullReport,
+    artistName: name,
+    createdAtLabel: stamp,
+    answers: { ...state.answers },
+    result,
+    analytics,
+    contentPlan,
+    pressKit,
+    build: { ...buildMeta }
+  };
 
   if(reportSubtitle) reportSubtitle.textContent = subtitle;
   if(reportSubtitle2) reportSubtitle2.textContent = subtitle;
@@ -485,11 +560,11 @@ function buildReport(){
 
   if(overallScore) overallScore.textContent = String(result.overall);
   if(overallScore2) overallScore2.textContent = String(result.overall);
-  if(nextGoal) nextGoal.textContent = result.insights.nextGoal;
+  if(nextGoal) nextGoal.textContent = result.insights?.nextGoal || "—";
 
   if(pillarChips){
     pillarChips.innerHTML = "";
-    Object.entries(result.pillarScores).forEach(([p,val])=>{
+    Object.entries(result.pillarScores || {}).forEach(([p,val])=>{
       const meta = pillarMeta(p);
       const chip = document.createElement("div");
       chip.className = "chip";
@@ -500,7 +575,7 @@ function buildReport(){
 
   if(pillarBars){
     pillarBars.innerHTML = "";
-    Object.entries(result.pillarScores).forEach(([p,val])=>{
+    Object.entries(result.pillarScores || {}).forEach(([p,val])=>{
       const meta = pillarMeta(p);
       const bar = document.createElement("div");
       bar.className = "bar";
@@ -513,22 +588,12 @@ function buildReport(){
     });
   }
 
-  const analytics = buildAnalytics(state.answers);
   renderAnalytics(analytics);
-
-  // Etapa D: Conteúdo
-  const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
-  state.lastContentPlan = contentPlan;
-  renderContentPlan(contentPlan);
-
-  // Etapa E: Press Kit
-  const pressKit = buildPressKit({ answers: state.answers, reportResult: result, analytics });
-  lastPressKit = pressKit;
-  renderPressKit(pressKit);
+  renderStrategicReport(result, state.lastBuiltReport);
 
   if(priorities30){
     priorities30.innerHTML = "";
-    result.plans.priorities.forEach(t=>{
+    (result.plans?.priorities || []).forEach(t=>{
       const li = document.createElement("li");
       li.textContent = t;
       priorities30.appendChild(li);
@@ -537,7 +602,7 @@ function buildReport(){
 
   if(checklist){
     checklist.innerHTML = "";
-    result.plans.checklist.forEach(t=>{
+    (result.plans?.checklist || []).forEach(t=>{
       const li = document.createElement("li");
       li.className = "check";
       li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
@@ -547,7 +612,7 @@ function buildReport(){
 
   if(timelineMonth){
     timelineMonth.innerHTML = "";
-    result.plans.month.forEach(item=>{
+    (result.plans?.month || []).forEach(item=>{
       const el = document.createElement("div");
       el.className = "titem";
       el.innerHTML = `
@@ -563,7 +628,7 @@ function buildReport(){
 
   if(timelineYear){
     timelineYear.innerHTML = "";
-    result.plans.year.forEach(item=>{
+    (result.plans?.year || []).forEach(item=>{
       const el = document.createElement("div");
       el.className = "titem";
       el.innerHTML = `
@@ -579,7 +644,7 @@ function buildReport(){
 
   if(recommendations){
     recommendations.innerHTML = "";
-    result.plans.recs.forEach(r=>{
+    (result.plans?.recs || []).forEach(r=>{
       const el = document.createElement("div");
       el.className = "rec";
       el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
@@ -587,25 +652,110 @@ function buildReport(){
     });
   }
 
-  const fullReport = {
-    id: uid(),
-    createdAt: new Date().toISOString(),
-    createdAtLabel: stamp,
-    artistName: name,
-    answers: state.answers,
-    result,
-    analytics,
-    contentPlan,
-    pressKit
-  };
+  state.lastContentPlan = contentPlan;
+  renderContentPlan(contentPlan);
 
-  state.lastBuiltReport = fullReport;
-  addReport(fullReport);
-  renderHistory();
-  renderCompareSelects(true);
-  renderCampaigns();
-  adminRefresh();
-  toast("Relatório gerado e salvo no histórico.");
+  lastPressKit = pressKit;
+  renderPressKit(pressKit);
+}
+
+
+function applyBuildInfo(){
+  const completion = `${BUILD_INFO.completionPct}%`;
+  const stageText = `${BUILD_INFO.currentMilestone}`;
+  const deployText = BUILD_INFO.deployTargets.join(" + ");
+
+  if(buildLabelLanding) buildLabelLanding.textContent = BUILD_INFO.buildLabel;
+  if(projectCompletionLanding) projectCompletionLanding.textContent = completion;
+  if(projectStageLanding) projectStageLanding.textContent = stageText;
+  if(deployTargetsLanding) deployTargetsLanding.textContent = deployText;
+
+  if(buildLabelReport) buildLabelReport.textContent = BUILD_INFO.buildLabel;
+  if(projectCompletionReport) projectCompletionReport.textContent = completion;
+  if(projectStageReport) projectStageReport.textContent = stageText;
+  if(projectBuildFoot) projectBuildFoot.textContent = `${BUILD_INFO.buildLabel} • Projeto ${completion} concluído • ${stageText}`;
+}
+
+function renderSimpleList(container, items, emptyText="—"){
+  if(!container) return;
+  const arr = Array.isArray(items) ? items : [];
+  container.innerHTML = "";
+  if(!arr.length){
+    const li = document.createElement("li");
+    li.textContent = emptyText;
+    container.appendChild(li);
+    return;
+  }
+  arr.forEach(item=>{
+    const li = document.createElement("li");
+    li.textContent = item;
+    container.appendChild(li);
+  });
+}
+
+function scoreTone(score){
+  if(score >= 75) return "good";
+  if(score >= 55) return "mid";
+  return "low";
+}
+
+function renderStrategicReport(result, fullReport){
+  if(executiveSummary) executiveSummary.textContent = safeText(result?.diagnostics?.summary || "Resumo executivo indisponível.");
+
+  if(profileLabel){
+    const tone = scoreTone(Number(result?.overall || 0));
+    profileLabel.className = `profileBadge profileBadge--${tone}`;
+    profileLabel.textContent = safeText(result?.profile?.label || "—");
+  }
+  if(profileSummary) profileSummary.textContent = safeText(result?.profile?.description || "—");
+
+  if(readinessGrid){
+    readinessGrid.innerHTML = "";
+    (result?.readiness || []).forEach(card=>{
+      const tone = scoreTone(Number(card.score || 0));
+      const el = document.createElement("div");
+      el.className = `readinessCard readinessCard--${tone}`;
+      el.innerHTML = `
+        <div class="readinessCard__top">
+          <div class="readinessCard__label">${escapeHtml(safeText(card.label))}</div>
+          <div class="readinessCard__score">${Number(card.score || 0)}</div>
+        </div>
+        <div class="readinessCard__hint">${escapeHtml(safeText(card.hint))}</div>
+      `;
+      readinessGrid.appendChild(el);
+    });
+  }
+
+  renderSimpleList(strengthList, result?.diagnostics?.strengths, "Gere um relatório para visualizar as forças.");
+  renderSimpleList(riskList, result?.diagnostics?.risks, "Gere um relatório para visualizar os riscos.");
+  renderSimpleList(opportunityList, result?.diagnostics?.opportunities, "Gere um relatório para visualizar as oportunidades.");
+  renderSimpleList(quickWinList, result?.diagnostics?.quickWins, "Gere um relatório para visualizar os quick wins.");
+
+  if(roadmap90){
+    roadmap90.innerHTML = "";
+    (result?.plans?.roadmap90 || []).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "roadmapCard";
+      el.innerHTML = `
+        <div class="roadmapCard__label">${escapeHtml(safeText(item.label))}</div>
+        <div class="roadmapCard__desc">${escapeHtml(safeText(item.desc))}</div>
+      `;
+      roadmap90.appendChild(el);
+    });
+  }
+
+  const buildMeta = fullReport?.build || BUILD_INFO;
+  if(projectBuildFoot){
+    projectBuildFoot.textContent = `${safeText(buildMeta.buildLabel || BUILD_INFO.buildLabel)} • Projeto ${safeText(String(buildMeta.completionPct || BUILD_INFO.completionPct))}% concluído • ${safeText(buildMeta.currentMilestone || BUILD_INFO.currentMilestone)}`;
+  }
+}
+
+function registerServiceWorker(){
+  if(location.protocol === "file:") return;
+  if(!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  });
 }
 
 function renderAnalytics(a){
@@ -858,165 +1008,16 @@ function openReportFromHistory(id){
 
   buildReportFromStored(r);
   showScreen("report");
-
   renderCompareSelects(true);
   renderCampaigns();
-
-  // conteúdo do histórico
-  if(r.contentPlan?.ideas?.length){
-    state.lastContentPlan = r.contentPlan;
-    renderContentPlan(r.contentPlan);
-  }else{
-    const cp = buildContentPlan({ answers: state.answers, reportResult: r.result });
-    state.lastContentPlan = cp;
-    renderContentPlan(cp);
-  }
-
-  // press kit do histórico
-  if(r.pressKit?.copyText){
-    lastPressKit = r.pressKit;
-    renderPressKit(r.pressKit);
-  }else{
-    const pk = buildPressKit({ answers: state.answers, reportResult: r.result, analytics: r.analytics });
-    lastPressKit = pk;
-    renderPressKit(pk);
-  }
-
   toast("Relatório aberto do histórico.");
 }
+
 
 function buildReportFromStored(fullReport){
   state.answers = fullReport.answers || {};
   saveAnswers(state.answers);
-  state.lastBuiltReport = fullReport;
-
-  const result = fullReport.result;
-  const analytics = fullReport.analytics;
-
-  const name = safeText(fullReport.artistName || "Artista");
-  const stamp = safeText(fullReport.createdAtLabel || "");
-  const subtitle = `Relatório gerado para ${name} • ${stamp}`;
-
-  if(reportSubtitle) reportSubtitle.textContent = subtitle;
-  if(reportSubtitle2) reportSubtitle2.textContent = subtitle;
-
-  if(stageLabel) stageLabel.textContent = result.stage.label;
-  if(stageLabel2) stageLabel2.textContent = result.stage.label;
-  if(stageHint) stageHint.textContent = result.stage.hint;
-
-  if(overallScore) overallScore.textContent = String(result.overall);
-  if(overallScore2) overallScore2.textContent = String(result.overall);
-  if(nextGoal) nextGoal.textContent = result.insights.nextGoal;
-
-  if(pillarChips){
-    pillarChips.innerHTML = "";
-    Object.entries(result.pillarScores).forEach(([p,val])=>{
-      const meta = pillarMeta(p);
-      const chip = document.createElement("div");
-      chip.className = "chip";
-      chip.innerHTML = `<strong>${escapeHtml(meta.label)}</strong> • ${val}/100`;
-      pillarChips.appendChild(chip);
-    });
-  }
-
-  if(pillarBars){
-    pillarBars.innerHTML = "";
-    Object.entries(result.pillarScores).forEach(([p,val])=>{
-      const meta = pillarMeta(p);
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.innerHTML = `
-        <div class="bar__label">${escapeHtml(meta.label)}</div>
-        <div class="bar__track"><div class="bar__fill" style="width:${val}%"></div></div>
-        <div class="bar__val">${val}</div>
-      `;
-      pillarBars.appendChild(bar);
-    });
-  }
-
-  renderAnalytics(analytics);
-
-  if(priorities30){
-    priorities30.innerHTML = "";
-    result.plans.priorities.forEach(t=>{
-      const li = document.createElement("li");
-      li.textContent = t;
-      priorities30.appendChild(li);
-    });
-  }
-
-  if(checklist){
-    checklist.innerHTML = "";
-    result.plans.checklist.forEach(t=>{
-      const li = document.createElement("li");
-      li.className = "check";
-      li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(t)}</div>`;
-      checklist.appendChild(li);
-    });
-  }
-
-  if(timelineMonth){
-    timelineMonth.innerHTML = "";
-    result.plans.month.forEach(item=>{
-      const el = document.createElement("div");
-      el.className = "titem";
-      el.innerHTML = `
-        <div class="titem__top">
-          <div class="titem__label">${escapeHtml(item.label)}</div>
-          <div class="titem__when">${escapeHtml(item.when)}</div>
-        </div>
-        <div class="titem__desc">${escapeHtml(item.desc)}</div>
-      `;
-      timelineMonth.appendChild(el);
-    });
-  }
-
-  if(timelineYear){
-    timelineYear.innerHTML = "";
-    result.plans.year.forEach(item=>{
-      const el = document.createElement("div");
-      el.className = "titem";
-      el.innerHTML = `
-        <div class="titem__top">
-          <div class="titem__label">${escapeHtml(item.label)}</div>
-          <div class="titem__when">${escapeHtml(item.when)}</div>
-        </div>
-        <div class="titem__desc">${escapeHtml(item.desc)}</div>
-      `;
-      timelineYear.appendChild(el);
-    });
-  }
-
-  if(recommendations){
-    recommendations.innerHTML = "";
-    result.plans.recs.forEach(r=>{
-      const el = document.createElement("div");
-      el.className = "rec";
-      el.innerHTML = `<div class="rec__title">${escapeHtml(r.title)}</div><div class="rec__body">${escapeHtml(r.body)}</div>`;
-      recommendations.appendChild(el);
-    });
-  }
-
-  // Conteúdo
-  if(fullReport.contentPlan?.ideas?.length){
-    state.lastContentPlan = fullReport.contentPlan;
-    renderContentPlan(fullReport.contentPlan);
-  }else{
-    const cp = buildContentPlan({ answers: state.answers, reportResult: result });
-    state.lastContentPlan = cp;
-    renderContentPlan(cp);
-  }
-
-  // Press kit
-  if(fullReport.pressKit?.copyText){
-    lastPressKit = fullReport.pressKit;
-    renderPressKit(fullReport.pressKit);
-  }else{
-    const pk = buildPressKit({ answers: state.answers, reportResult: result, analytics });
-    lastPressKit = pk;
-    renderPressKit(pk);
-  }
-
+  applyReportView(fullReport || {});
   renderHistory();
   adminRefresh();
 }
@@ -1048,8 +1049,8 @@ function renderCompareSelects(autoPick=false){
   });
 
   if(autoPick && reports.length >= 2){
-    compareA.value = reports[reports.length-2].id;
-    compareB.value = reports[reports.length-1].id;
+    compareA.value = reports[1].id;
+    compareB.value = reports[0].id;
     runCompare();
   }else{
     clearCompareView();

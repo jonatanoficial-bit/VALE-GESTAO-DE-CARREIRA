@@ -1,0 +1,21 @@
+{
+  "name": "Vale Produção - Gestão de Carreira Musical",
+  "short_name": "Vale Produção",
+  "description": "Diagnóstico estratégico de carreira musical com IA local, relatório premium, campanhas e press kit.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0b10",
+  "theme_color": "#0b0b10",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
