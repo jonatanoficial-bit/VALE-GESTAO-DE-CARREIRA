@@ -1,15 +1,15 @@
-const CACHE_NAME = 'vale-producao-2026-03-06-1253';
+const CACHE_NAME = 'vale-producao-2026-03-13-1035';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './css/styles.css?v=2026-03-06-1253',
-  './css/desktop-fix.css?v=2026-03-06-1253',
-  './css/campaigns.css?v=2026-03-06-1253',
-  './css/content-plan.css?v=2026-03-06-1253',
-  './css/presskit.css?v=2026-03-06-1253',
-  './css/admin.css?v=2026-03-06-1253',
-  './js/app.js?v=2026-03-06-1253',
+  './css/styles.css?v=2026-03-13-1035',
+  './css/desktop-fix.css?v=2026-03-13-1035',
+  './css/campaigns.css?v=2026-03-13-1035',
+  './css/content-plan.css?v=2026-03-13-1035',
+  './css/presskit.css?v=2026-03-13-1035',
+  './css/admin.css?v=2026-03-13-1035',
+  './js/app.js?v=2026-03-13-1035',
   './js/utils.js',
   './js/data/questions.js',
   './js/data/build-info.js',
@@ -21,6 +21,7 @@ const ASSETS = [
   './js/core/content-plan.js',
   './js/core/presskit.js',
   './js/core/admin.js',
+  './js/core/commercial.js',
   './assets/logo.png',
   './assets/icon-192.png',
   './assets/icon-512.png'

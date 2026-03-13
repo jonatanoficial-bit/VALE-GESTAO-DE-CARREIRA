@@ -1,4 +1,13 @@
-BUILD: BUILD 2026-03-06 12:53 -03
-PROJETO: 64% concluido
-MARCO: Etapa 3 de 7 · Premium Beta Offline
-ZIP: VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-06-1253.zip
+VALE GESTAO DE CARREIRA
+BUILD: 2026-03-13 10:35 -03
+ETAPA: 4 de 7 · Produto Comercial Beta
+CONCLUSAO ATUAL: 76%
+ZIP: VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-13-1035.zip
+
+Melhorias-chave:
+- motor comercial beta
+- escada de ofertas
+- projeção de receita
+- checklist go-to-market
+- backup completo do relatório
+- docs atualizados para equipe

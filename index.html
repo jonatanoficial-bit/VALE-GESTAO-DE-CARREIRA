@@ -11,14 +11,14 @@
   <link rel="icon" href="./assets/logo.png" />
 
   <!-- CSS base (premium) -->
-  <link rel="stylesheet" href="./css/styles.css?v=2026-03-06-1253" />
-  <link rel="stylesheet" href="./css/desktop-fix.css?v=2026-03-06-1253" />
+  <link rel="stylesheet" href="./css/styles.css?v=2026-03-13-1035" />
+  <link rel="stylesheet" href="./css/desktop-fix.css?v=2026-03-13-1035" />
 
   <!-- Add-ons seguros -->
-  <link rel="stylesheet" href="./css/campaigns.css?v=2026-03-06-1253" />
-  <link rel="stylesheet" href="./css/content-plan.css?v=2026-03-06-1253" />
-  <link rel="stylesheet" href="./css/presskit.css?v=2026-03-06-1253" />
-  <link rel="stylesheet" href="./css/admin.css?v=2026-03-06-1253" />
+  <link rel="stylesheet" href="./css/campaigns.css?v=2026-03-13-1035" />
+  <link rel="stylesheet" href="./css/content-plan.css?v=2026-03-13-1035" />
+  <link rel="stylesheet" href="./css/presskit.css?v=2026-03-13-1035" />
+  <link rel="stylesheet" href="./css/admin.css?v=2026-03-13-1035" />
 </head>
 
 <body>
@@ -198,6 +198,7 @@
             <div class="report__actions">
               <button id="btnEdit" class="btn btn--ghost">Editar respostas</button>
               <button id="btnExportJSON" class="btn btn--ghost">Exportar JSON</button>
+              <button id="btnExportBundle" class="btn btn--ghost">Backup completo</button>
               <button id="btnPrint" class="btn btn--primary">Baixar PDF</button>
             </div>
           </div>
@@ -290,6 +291,57 @@
   </div>
 </div>
 
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel__kicker">Comercial</div>
+    <div class="panel__title">Prontidão de mercado</div>
+    <div class="commercialHero">
+      <div class="commercialScoreWrap">
+        <div id="commercialScore" class="commercialScore">0</div>
+        <div class="commercialScoreLabel">Prontidão comercial</div>
+      </div>
+      <div class="commercialHeroText">
+        <div id="commercialLane" class="profileBadge">—</div>
+        <div id="commercialSummary" class="panel__desc">Gere um relatório para receber o plano de comercialização.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__kicker">Receita</div>
+    <div class="panel__title">Projeção mensal por cenário</div>
+    <div id="revenueForecast" class="forecastGrid"></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel__kicker">Oferta</div>
+    <div class="panel__title">Escada de produto recomendada</div>
+    <div id="offerStack" class="offerStack"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__kicker">Go-to-market</div>
+    <div class="panel__title">Checklist comercial da fase beta</div>
+    <ul id="launchChecklist" class="checklist"></ul>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel__kicker">Build atual</div>
+    <div class="panel__title">Entregas desta etapa</div>
+    <div id="betaFeatures" class="chips"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__kicker">Expansão</div>
+    <div class="panel__title">DLCs e upgrades futuros</div>
+    <div id="dlcRoadmap" class="offerStack offerStack--mini"></div>
+  </div>
+</div>
 <div class="panel">
   <div class="panel__kicker">Roadmap</div>
   <div class="panel__title">Plano de 90 dias</div>
@@ -661,6 +713,6 @@
 
   </div>
 
-  <script type="module" src="./js/app.js?v=2026-03-06-1253"></script>
+  <script type="module" src="./js/app.js?v=2026-03-13-1035"></script>
 </body>
 </html>

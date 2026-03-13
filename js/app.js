@@ -17,6 +17,7 @@ import {
 
 import { buildContentPlan } from "./core/content-plan.js";
 import { buildPressKit } from "./core/presskit.js";
+import { buildCommercialPlan } from "./core/commercial.js";
 
 import {
   verifyPin,
@@ -47,6 +48,7 @@ const btnEdit = document.getElementById("btnEdit");
 const btnPrint = document.getElementById("btnPrint");
 const btnTheme = document.getElementById("btnTheme");
 const btnExportJSON = document.getElementById("btnExportJSON");
+const btnExportBundle = document.getElementById("btnExportBundle");
 const btnClearHistory = document.getElementById("btnClearHistory");
 
 const qSection = document.getElementById("qSection");
@@ -83,6 +85,14 @@ const riskList = document.getElementById("riskList");
 const opportunityList = document.getElementById("opportunityList");
 const quickWinList = document.getElementById("quickWinList");
 const roadmap90 = document.getElementById("roadmap90");
+const commercialScore = document.getElementById("commercialScore");
+const commercialLane = document.getElementById("commercialLane");
+const commercialSummary = document.getElementById("commercialSummary");
+const offerStack = document.getElementById("offerStack");
+const revenueForecast = document.getElementById("revenueForecast");
+const launchChecklist = document.getElementById("launchChecklist");
+const betaFeatures = document.getElementById("betaFeatures");
+const dlcRoadmap = document.getElementById("dlcRoadmap");
 const projectBuildFoot = document.getElementById("projectBuildFoot");
 
 const pillarChips = document.getElementById("pillarChips");
@@ -223,6 +233,18 @@ function bind(){
     const name = safeText(state.lastBuiltReport.artistName || "relatorio");
     downloadJSON(`vale-relatorio-${slug(name)}-${BUILD_INFO.buildSlug}.json`, state.lastBuiltReport);
     toast("JSON exportado.");
+  });
+
+  btnExportBundle?.addEventListener("click", ()=>{
+    if(!state.lastBuiltReport){ toast("Gere um relatório antes."); return; }
+    const name = safeText(state.lastBuiltReport.artistName || "relatorio");
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      build: { ...BUILD_INFO },
+      report: state.lastBuiltReport
+    };
+    downloadJSON(`vale-backup-completo-${slug(name)}-${BUILD_INFO.buildSlug}.json`, payload);
+    toast("Backup completo exportado.");
   });
 
   btnClearHistory?.addEventListener("click", ()=>{
@@ -497,6 +519,7 @@ function buildReport(){
   const analytics = buildAnalytics(state.answers);
   const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
   const pressKit = buildPressKit({ answers: state.answers, reportResult: result, analytics });
+  const commercial = buildCommercialPlan({ answers: state.answers, reportResult: result, analytics });
 
   const name = safeText(state.answers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
@@ -506,11 +529,12 @@ function buildReport(){
     createdAt: new Date().toISOString(),
     createdAtLabel: stamp,
     artistName: name,
-    answers: { ...state.answers },
+    answers: { ...sourceAnswers },
     result,
     analytics,
     contentPlan,
     pressKit,
+    commercial,
     build: { ...BUILD_INFO }
   };
 
@@ -525,14 +549,18 @@ function buildReport(){
 }
 
 function applyReportView(fullReport){
-  const result = fullReport?.result?.diagnostics ? fullReport.result : scoreAnswers(state.answers, QUESTIONS);
-  const analytics = fullReport?.analytics || buildAnalytics(state.answers);
+  const sourceAnswers = fullReport?.answers ? { ...fullReport.answers } : { ...state.answers };
+  const result = fullReport?.result?.diagnostics ? fullReport.result : scoreAnswers(sourceAnswers, QUESTIONS);
+  const analytics = fullReport?.analytics || buildAnalytics(sourceAnswers);
   const contentPlan = fullReport?.contentPlan?.ideas?.length
     ? fullReport.contentPlan
-    : buildContentPlan({ answers: state.answers, reportResult: result });
+    : buildContentPlan({ answers: sourceAnswers, reportResult: result });
   const pressKit = fullReport?.pressKit?.copyText
     ? fullReport.pressKit
-    : buildPressKit({ answers: state.answers, reportResult: result, analytics });
+    : buildPressKit({ answers: sourceAnswers, reportResult: result, analytics });
+  const commercial = fullReport?.commercial?.offers?.length
+    ? fullReport.commercial
+    : buildCommercialPlan({ answers: sourceAnswers, reportResult: result, analytics });
   const buildMeta = fullReport?.build || BUILD_INFO;
 
   const name = safeText(fullReport?.artistName || state.answers.artist_name || "Artista");
@@ -543,11 +571,12 @@ function applyReportView(fullReport){
     ...fullReport,
     artistName: name,
     createdAtLabel: stamp,
-    answers: { ...state.answers },
+    answers: { ...sourceAnswers },
     result,
     analytics,
     contentPlan,
     pressKit,
+    commercial,
     build: { ...buildMeta }
   };
 
@@ -590,6 +619,7 @@ function applyReportView(fullReport){
 
   renderAnalytics(analytics);
   renderStrategicReport(result, state.lastBuiltReport);
+  renderCommercialPlan(commercial);
 
   if(priorities30){
     priorities30.innerHTML = "";
@@ -747,6 +777,82 @@ function renderStrategicReport(result, fullReport){
   const buildMeta = fullReport?.build || BUILD_INFO;
   if(projectBuildFoot){
     projectBuildFoot.textContent = `${safeText(buildMeta.buildLabel || BUILD_INFO.buildLabel)} • Projeto ${safeText(String(buildMeta.completionPct || BUILD_INFO.completionPct))}% concluído • ${safeText(buildMeta.currentMilestone || BUILD_INFO.currentMilestone)}`;
+  }
+}
+
+
+function renderCommercialPlan(plan){
+  if(commercialScore) commercialScore.textContent = String(Number(plan?.readiness || 0));
+  if(commercialLane){
+    const tone = scoreTone(Number(plan?.readiness || 0));
+    commercialLane.className = `profileBadge profileBadge--${tone}`;
+    commercialLane.textContent = safeText(plan?.lane || "—");
+  }
+  if(commercialSummary) commercialSummary.textContent = safeText(plan?.summary || "Plano comercial indisponível.");
+
+  if(revenueForecast){
+    revenueForecast.innerHTML = "";
+    const cards = [
+      ["Conservador", plan?.estimatedMonthly?.conservative],
+      ["Meta", plan?.estimatedMonthly?.target],
+      ["Escala", plan?.estimatedMonthly?.stretch]
+    ];
+    cards.forEach(([label, value])=>{
+      const el = document.createElement("div");
+      el.className = "forecastCard";
+      el.innerHTML = `<div class="forecastCard__label">${escapeHtml(label)}</div><div class="forecastCard__value">R$ ${escapeHtml(formatNumber(Number(value || 0)))}</div>`;
+      revenueForecast.appendChild(el);
+    });
+  }
+
+  if(offerStack){
+    offerStack.innerHTML = "";
+    (plan?.offers || []).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "offerCard";
+      el.innerHTML = `
+        <div class="offerCard__top">
+          <div>
+            <div class="offerCard__tier">${escapeHtml(safeText(item.tier))}</div>
+            <div class="offerCard__name">${escapeHtml(safeText(item.name))}</div>
+          </div>
+          <div class="offerCard__price">${escapeHtml(safeText(item.price))}</div>
+        </div>
+        <div class="offerCard__summary">${escapeHtml(safeText(item.summary))}</div>
+        <ul class="offerCard__list">${(item.bullets || []).map(b=>`<li>${escapeHtml(safeText(b))}</li>`).join("")}</ul>
+      `;
+      offerStack.appendChild(el);
+    });
+  }
+
+  if(launchChecklist){
+    launchChecklist.innerHTML = "";
+    (plan?.launchChecklist || []).forEach(t=>{
+      const li = document.createElement("li");
+      li.className = "check";
+      li.innerHTML = `<div class="check__box" aria-hidden="true"></div><div class="check__text">${escapeHtml(safeText(t))}</div>`;
+      launchChecklist.appendChild(li);
+    });
+  }
+
+  if(betaFeatures){
+    betaFeatures.innerHTML = "";
+    (plan?.betaFeatures || []).forEach(f=>{
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.innerHTML = `<strong>Beta</strong> • ${escapeHtml(safeText(f))}`;
+      betaFeatures.appendChild(chip);
+    });
+  }
+
+  if(dlcRoadmap){
+    dlcRoadmap.innerHTML = "";
+    (plan?.dlc || []).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "offerCard offerCard--mini";
+      el.innerHTML = `<div class="offerCard__name">${escapeHtml(safeText(item.name))}</div><div class="offerCard__summary">${escapeHtml(safeText(item.value))}</div>`;
+      dlcRoadmap.appendChild(el);
+    });
   }
 }
 
