@@ -775,7 +775,7 @@ html[data-theme="light"] .spark{ background: rgba(255,255,255,.92); }
 }
 
 
-/* BUILD 2026-03-17 14:23 -03 */
+/* BUILD 2026-03-17 18:11 -03 */
 .reportLocaleRow{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:14px 0 16px;flex-wrap:wrap}
 .teamHandoffCard{border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:18px;background:rgba(255,255,255,.03);box-shadow:0 14px 40px rgba(0,0,0,.18)}
 .teamHandoffCard__top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}

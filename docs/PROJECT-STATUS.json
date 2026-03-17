@@ -1,16 +1,17 @@
 {
-  "buildId": "2026-03-17-1423",
-  "buildLabel": "BUILD 2026-03-17 14:23 -03",
-  "completionPct": 91,
-  "stage": "Etapa 6 de 7 · Execução Comercial + Integrações Ready",
-  "deploy": ["GitHub Pages", "Vercel"],
-  "engine": "IA estratégica local v5 + growth suite offline",
-  "remainingMajorItems": [
-    "autenticação e multiusuário",
-    "sincronização em nuvem",
-    "pagamentos/assinaturas",
-    "integrações reais com APIs",
+  "buildId": "2026-03-17-1811",
+  "buildLabel": "BUILD 2026-03-17 18:11 -03",
+  "completionPct": 100,
+  "stage": "Etapa 7 de 7 · Escala Enterprise + Marketplace DLC",
+  "deployTargets": ["GitHub Pages", "Vercel"],
+  "releaseChannel": "enterprise-marketplace-dlc",
+  "reportEngine": "IA estratégica local v6 + enterprise marketplace offline",
+  "zipName": "VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-17-1811.zip",
+  "post100Roadmap": [
+    "login e sincronizacao em nuvem",
+    "pagamentos e assinaturas",
+    "integracoes reais com Spotify/YouTube/Meta",
     "PDF premium server-side",
-    "camada enterprise/marketplace"
+    "analytics de produto e validacao com usuarios"
   ]
 }
