@@ -1,15 +1,15 @@
-const CACHE_NAME = 'vale-producao-2026-03-13-1035';
+const CACHE_NAME = 'vale-producao-2026-03-17-1143';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './css/styles.css?v=2026-03-13-1035',
-  './css/desktop-fix.css?v=2026-03-13-1035',
-  './css/campaigns.css?v=2026-03-13-1035',
-  './css/content-plan.css?v=2026-03-13-1035',
-  './css/presskit.css?v=2026-03-13-1035',
-  './css/admin.css?v=2026-03-13-1035',
-  './js/app.js?v=2026-03-13-1035',
+  './css/styles.css?v=2026-03-17-1143',
+  './css/desktop-fix.css?v=2026-03-17-1143',
+  './css/campaigns.css?v=2026-03-17-1143',
+  './css/content-plan.css?v=2026-03-17-1143',
+  './css/presskit.css?v=2026-03-17-1143',
+  './css/admin.css?v=2026-03-17-1143',
+  './js/app.js?v=2026-03-17-1143',
   './js/utils.js',
   './js/data/questions.js',
   './js/data/build-info.js',

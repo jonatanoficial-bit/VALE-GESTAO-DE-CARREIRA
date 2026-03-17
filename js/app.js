@@ -49,6 +49,8 @@ const btnPrint = document.getElementById("btnPrint");
 const btnTheme = document.getElementById("btnTheme");
 const btnExportJSON = document.getElementById("btnExportJSON");
 const btnExportBundle = document.getElementById("btnExportBundle");
+const btnCopyTeamSummary = document.getElementById("btnCopyTeamSummary");
+const btnDownloadTeamSummary = document.getElementById("btnDownloadTeamSummary");
 const btnClearHistory = document.getElementById("btnClearHistory");
 
 const qSection = document.getElementById("qSection");
@@ -94,6 +96,8 @@ const launchChecklist = document.getElementById("launchChecklist");
 const betaFeatures = document.getElementById("betaFeatures");
 const dlcRoadmap = document.getElementById("dlcRoadmap");
 const projectBuildFoot = document.getElementById("projectBuildFoot");
+const reportLocaleSelect = document.getElementById("reportLocaleSelect");
+const teamHandoffCard = document.getElementById("teamHandoffCard");
 
 const pillarChips = document.getElementById("pillarChips");
 const pillarBars = document.getElementById("pillarBars");
@@ -187,7 +191,8 @@ let state = {
   answers: loadAnswers(),
   lastScreen: "landing",
   lastBuiltReport: null,
-  lastContentPlan: null
+  lastContentPlan: null,
+  reportLocale: loadReportLocale()
 };
 
 let adminState = {
@@ -209,6 +214,7 @@ function init(){
   if(btnBack) btnBack.style.visibility = "hidden";
   renderHistory();
   renderCompareSelects();
+  if(reportLocaleSelect) reportLocaleSelect.value = state.reportLocale || "pt-BR";
   renderCampaigns();
   clearContentPlan();
   clearPressKit();
@@ -245,6 +251,15 @@ function bind(){
     };
     downloadJSON(`vale-backup-completo-${slug(name)}-${BUILD_INFO.buildSlug}.json`, payload);
     toast("Backup completo exportado.");
+  });
+
+  btnCopyTeamSummary?.addEventListener("click", copyTeamSummary);
+  btnDownloadTeamSummary?.addEventListener("click", downloadTeamSummary);
+  reportLocaleSelect?.addEventListener("change", ()=>{
+    state.reportLocale = reportLocaleSelect.value || "pt-BR";
+    saveReportLocale(state.reportLocale);
+    refreshTeamHandoff();
+    toast("Idioma do handoff atualizado.");
   });
 
   btnClearHistory?.addEventListener("click", ()=>{
@@ -366,9 +381,14 @@ function nextQ(){
   saveAnswers(state.answers);
 
   if(state.idx >= QUESTIONS.length - 1){
-    buildReport();
-    showScreen("report");
-    renderCampaigns();
+    try{
+      buildReport();
+      showScreen("report");
+      renderCampaigns();
+    }catch(err){
+      console.error("Falha ao gerar relatório final", err);
+      toast("O relatório falhou no final. Corrigido nesta build: tente novamente.");
+    }
     return;
   }
   state.idx += 1;
@@ -515,13 +535,14 @@ function renderNumber(q){
   REPORT BUILD
 ---------------------------------------------------------- */
 function buildReport(){
-  const result = scoreAnswers(state.answers, QUESTIONS);
-  const analytics = buildAnalytics(state.answers);
-  const contentPlan = buildContentPlan({ answers: state.answers, reportResult: result });
-  const pressKit = buildPressKit({ answers: state.answers, reportResult: result, analytics });
-  const commercial = buildCommercialPlan({ answers: state.answers, reportResult: result, analytics });
+  const sourceAnswers = { ...state.answers };
+  const result = scoreAnswers(sourceAnswers, QUESTIONS);
+  const analytics = buildAnalytics(sourceAnswers);
+  const contentPlan = buildContentPlan({ answers: sourceAnswers, reportResult: result });
+  const pressKit = buildPressKit({ answers: sourceAnswers, reportResult: result, analytics });
+  const commercial = buildCommercialPlan({ answers: sourceAnswers, reportResult: result, analytics });
 
-  const name = safeText(state.answers.artist_name || "Artista");
+  const name = safeText(sourceAnswers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
 
   const fullReport = {
@@ -687,7 +708,9 @@ function applyReportView(fullReport){
 
   lastPressKit = pressKit;
   renderPressKit(pressKit);
+  refreshTeamHandoff();
 }
+
 
 
 function applyBuildInfo(){
@@ -1485,6 +1508,7 @@ function adminClearAll(){
   all.forEach(c => deleteCampaign(c.id));
   renderHistory();
   renderCompareSelects();
+  if(reportLocaleSelect) reportLocaleSelect.value = state.reportLocale || "pt-BR";
   renderCampaigns();
   adminRefresh();
   toast("Tudo removido deste dispositivo.");
@@ -1544,6 +1568,142 @@ function saveNewPin(){
   }
   closePinChangeModal();
   toast("PIN atualizado.");
+}
+
+function refreshTeamHandoff(){
+  if(!teamHandoffCard) return;
+  const data = buildTeamHandoffData();
+  if(!data){
+    teamHandoffCard.textContent = "Gere um relatório para montar o handoff da equipe.";
+    return;
+  }
+  teamHandoffCard.innerHTML = `
+    <div class="teamHandoffCard__top">
+      <div>
+        <div class="teamHandoffCard__title">${escapeHtml(data.title)}</div>
+        <div class="teamHandoffCard__meta">${escapeHtml(data.meta)}</div>
+      </div>
+      <div class="teamHandoffBadge">${escapeHtml(data.localeLabel)}</div>
+    </div>
+    <div class="teamHandoffCard__body">
+      <p>${escapeHtml(data.summary)}</p>
+      <div class="teamHandoffGrid">
+        <div><strong>${escapeHtml(data.labels.strengths)}</strong><ul>${data.strengths.map(v=>`<li>${escapeHtml(v)}</li>`).join("")}</ul></div>
+        <div><strong>${escapeHtml(data.labels.risks)}</strong><ul>${data.risks.map(v=>`<li>${escapeHtml(v)}</li>`).join("")}</ul></div>
+        <div><strong>${escapeHtml(data.labels.quickWins)}</strong><ul>${data.quickWins.map(v=>`<li>${escapeHtml(v)}</li>`).join("")}</ul></div>
+        <div><strong>${escapeHtml(data.labels.nextSprint)}</strong><ul>${data.nextSprint.map(v=>`<li>${escapeHtml(v)}</li>`).join("")}</ul></div>
+      </div>
+    </div>
+  `;
+}
+
+function buildTeamHandoffData(){
+  const report = state.lastBuiltReport;
+  if(!report?.result) return null;
+  const locale = state.reportLocale || "pt-BR";
+  const dict = handoffDictionary(locale);
+  const result = report.result || {};
+  const commercial = report.commercial || {};
+  const title = `${dict.project}: ${safeText(report.artistName || "Artista")}`;
+  const meta = `${dict.build} ${safeText((report.build || BUILD_INFO).buildLabel)} • ${dict.progress} ${safeText(String((report.build || BUILD_INFO).completionPct || BUILD_INFO.completionPct))}% • ${dict.stage} ${safeText(result.stage?.label || "—")}`;
+  return {
+    title,
+    meta,
+    localeLabel: dict.localeLabel,
+    labels: dict.labels,
+    summary: safeText(result.diagnostics?.summary || dict.empty),
+    strengths: normalizeTeamList(result.diagnostics?.strengths, dict.emptyItem),
+    risks: normalizeTeamList(result.diagnostics?.risks, dict.emptyItem),
+    quickWins: normalizeTeamList(result.diagnostics?.quickWins, dict.emptyItem),
+    nextSprint: normalizeTeamList(result.plans?.priorities, dict.emptyItem).slice(0,4),
+    markdown: buildTeamHandoffMarkdown(report, dict)
+  };
+}
+
+function buildTeamHandoffMarkdown(report, dict){
+  const result = report.result || {};
+  const commercial = report.commercial || {};
+  const lines = [];
+  lines.push(`# ${dict.project}: ${safeText(report.artistName || "Artista")}`);
+  lines.push("");
+  lines.push(`- ${dict.build}: ${safeText((report.build || BUILD_INFO).buildLabel)}`);
+  lines.push(`- ${dict.progress}: ${safeText(String((report.build || BUILD_INFO).completionPct || BUILD_INFO.completionPct))}%`);
+  lines.push(`- ${dict.stage}: ${safeText(result.stage?.label || "—")}`);
+  lines.push(`- ${dict.score}: ${safeText(String(result.overall || 0))}/100`);
+  lines.push(`- ${dict.marketLane}: ${safeText(commercial.lane || "—")}`);
+  lines.push("");
+  lines.push(`## ${dict.labels.summary}`);
+  lines.push(safeText(result.diagnostics?.summary || dict.empty));
+  lines.push("");
+  lines.push(`## ${dict.labels.strengths}`);
+  normalizeTeamList(result.diagnostics?.strengths, dict.emptyItem).forEach(v=> lines.push(`- ${v}`));
+  lines.push("");
+  lines.push(`## ${dict.labels.risks}`);
+  normalizeTeamList(result.diagnostics?.risks, dict.emptyItem).forEach(v=> lines.push(`- ${v}`));
+  lines.push("");
+  lines.push(`## ${dict.labels.quickWins}`);
+  normalizeTeamList(result.diagnostics?.quickWins, dict.emptyItem).forEach(v=> lines.push(`- ${v}`));
+  lines.push("");
+  lines.push(`## ${dict.labels.nextSprint}`);
+  normalizeTeamList(result.plans?.priorities, dict.emptyItem).slice(0,4).forEach(v=> lines.push(`- ${v}`));
+  return lines.join("\n");
+}
+
+function normalizeTeamList(items, emptyItem){
+  return Array.isArray(items) && items.length ? items.map(v=> safeText(v)).filter(Boolean) : [emptyItem];
+}
+
+function handoffDictionary(locale){
+  const map = {
+    "pt-BR": {
+      localeLabel: "PT-BR", project: "Handoff de equipe", build: "Build", progress: "Projeto", stage: "Status", score: "Score", marketLane: "Faixa comercial", empty: "Resumo indisponível.", emptyItem: "Sem dados suficientes.",
+      labels: { summary: "Resumo executivo", strengths: "Forças", risks: "Riscos", quickWins: "Quick wins", nextSprint: "Próxima sprint" }
+    },
+    "en-US": {
+      localeLabel: "EN-US", project: "Team handoff", build: "Build", progress: "Project", stage: "Stage", score: "Score", marketLane: "Commercial lane", empty: "Executive summary unavailable.", emptyItem: "Not enough data.",
+      labels: { summary: "Executive summary", strengths: "Strengths", risks: "Risks", quickWins: "Quick wins", nextSprint: "Next sprint" }
+    },
+    "es-ES": {
+      localeLabel: "ES-ES", project: "Handoff del equipo", build: "Build", progress: "Proyecto", stage: "Etapa", score: "Puntuación", marketLane: "Nivel comercial", empty: "Resumen ejecutivo no disponible.", emptyItem: "Sin datos suficientes.",
+      labels: { summary: "Resumen ejecutivo", strengths: "Fortalezas", risks: "Riesgos", quickWins: "Quick wins", nextSprint: "Próximo sprint" }
+    }
+  };
+  return map[locale] || map["pt-BR"];
+}
+
+async function copyTeamSummary(){
+  const data = buildTeamHandoffData();
+  if(!data){ toast("Gere um relatório antes."); return; }
+  try{
+    await navigator.clipboard.writeText(data.markdown);
+    toast("Resumo da equipe copiado.");
+  }catch{
+    toast("Não foi possível copiar o resumo.");
+  }
+}
+
+function downloadTeamSummary(){
+  const data = buildTeamHandoffData();
+  if(!data){ toast("Gere um relatório antes."); return; }
+  const blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vale-handoff-${slug(state.lastBuiltReport?.artistName || "artista")}-${state.reportLocale || "pt-BR"}-${BUILD_INFO.buildSlug}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast("Handoff baixado.");
+}
+
+function loadReportLocale(){
+  const v = localStorage.getItem("vale_cm_report_locale");
+  return ["pt-BR","en-US","es-ES"].includes(v) ? v : "pt-BR";
+}
+
+function saveReportLocale(locale){
+  localStorage.setItem("vale_cm_report_locale", locale);
 }
 
 /* ----------------------------------------------------------

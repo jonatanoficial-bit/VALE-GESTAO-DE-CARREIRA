@@ -1,24 +1,24 @@
 {
-  "build": "2026-03-13 10:35 -03",
-  "buildSlug": "2026-03-13-1035",
-  "stage": "Etapa 4 de 7 · Produto Comercial Beta",
-  "completionPct": 76,
-  "releaseChannel": "commercial-beta",
+  "build": "2026-03-17 11:43 -03",
+  "buildSlug": "2026-03-17-1143",
+  "stage": "Etapa 5 de 7 · Colaboração e Internacionalização Prep",
+  "completionPct": 84,
+  "releaseChannel": "collab-i18n-prep",
   "deployTargets": ["GitHub Pages", "Vercel"],
   "newFeatures": [
-    "motor comercial beta",
-    "escada de ofertas",
-    "projecao de receita",
-    "checklist go-to-market",
-    "backup completo",
-    "DLC roadmap"
+    "fix geracao de relatorio final",
+    "fallback no fechamento do wizard",
+    "handoff multilanguage",
+    "exportacao markdown",
+    "copy summary para equipe",
+    "docs de sprint"
   ],
   "remaining": [
     "auth",
     "database online",
     "billing",
     "pdf server-side",
-    "i18n",
+    "i18n completo",
     "integracoes",
     "ia cloud"
   ]
