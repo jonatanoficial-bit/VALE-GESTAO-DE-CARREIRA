@@ -11,14 +11,14 @@
   <link rel="icon" href="./assets/logo.png" />
 
   <!-- CSS base (premium) -->
-  <link rel="stylesheet" href="./css/styles.css?v=2026-03-17-1143" />
-  <link rel="stylesheet" href="./css/desktop-fix.css?v=2026-03-17-1143" />
+  <link rel="stylesheet" href="./css/styles.css?v=2026-03-17-1423" />
+  <link rel="stylesheet" href="./css/desktop-fix.css?v=2026-03-17-1423" />
 
   <!-- Add-ons seguros -->
-  <link rel="stylesheet" href="./css/campaigns.css?v=2026-03-17-1143" />
-  <link rel="stylesheet" href="./css/content-plan.css?v=2026-03-17-1143" />
-  <link rel="stylesheet" href="./css/presskit.css?v=2026-03-17-1143" />
-  <link rel="stylesheet" href="./css/admin.css?v=2026-03-17-1143" />
+  <link rel="stylesheet" href="./css/campaigns.css?v=2026-03-17-1423" />
+  <link rel="stylesheet" href="./css/content-plan.css?v=2026-03-17-1423" />
+  <link rel="stylesheet" href="./css/presskit.css?v=2026-03-17-1423" />
+  <link rel="stylesheet" href="./css/admin.css?v=2026-03-17-1423" />
 </head>
 
 <body>
@@ -201,6 +201,7 @@
               <button id="btnExportBundle" class="btn btn--ghost">Backup completo</button>
               <button id="btnCopyTeamSummary" class="btn btn--ghost">Copiar resumo equipe</button>
               <button id="btnDownloadTeamSummary" class="btn btn--ghost">Baixar handoff</button>
+              <button id="btnDownloadExecutionPack" class="btn btn--ghost">Execution Pack</button>
               <button id="btnPrint" class="btn btn--primary">Baixar PDF</button>
             </div>
           </div>
@@ -349,6 +350,51 @@
   <div class="panel__title">Plano de 90 dias</div>
   <div class="panel__desc">Três blocos de evolução para sair do diagnóstico e entrar em execução comercial.</div>
   <div id="roadmap90" class="roadmap90"></div>
+</div>
+
+<div class="panel">
+  <div class="panel__kicker">Handoff</div>
+  <div class="panel__title">Resumo para equipe</div>
+  <div class="panel__desc">Escolha o idioma do resumo e gere um handoff pronto para operação.</div>
+  <div class="reportLocaleRow">
+    <label for="reportLocaleSelect">Idioma do handoff</label>
+    <select id="reportLocaleSelect" class="select">
+      <option value="pt-BR">PT-BR</option>
+      <option value="en-US">EN-US</option>
+      <option value="es-ES">ES-ES</option>
+    </select>
+  </div>
+  <div id="teamHandoffCard" class="teamHandoffCard">Gere um relatório para montar o handoff da equipe.</div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel__kicker">Benchmark</div>
+    <div class="panel__title">Benchmark competitivo local</div>
+    <div id="benchmarkSummary" class="profileBadge">—</div>
+    <div id="growthSuiteSummary" class="panel__desc">Gere um relatório para receber benchmark e plano de execução.</div>
+    <div id="benchmarkGrid" class="benchmarkGrid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__kicker">Pricing Lab</div>
+    <div class="panel__title">Faixas de preço e scripts</div>
+    <div id="pricingGrid" class="offerStack"></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="panel__kicker">Sprint</div>
+    <div class="panel__title">Plano de execução em 21 dias</div>
+    <div id="sprintBoard" class="sprintBoard"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__kicker">Integrações</div>
+    <div class="panel__title">Checklist para GitHub, Vercel e próxima camada</div>
+    <ul id="integrationChecklist" class="checklist"></ul>
+  </div>
 </div>
 
 <!-- ✅ NOVO (ETAPA D): Plano de Conteúdo -->
@@ -715,6 +761,6 @@
 
   </div>
 
-  <script type="module" src="./js/app.js?v=2026-03-17-1143"></script>
+  <script type="module" src="./js/app.js?v=2026-03-17-1423"></script>
 </body>
 </html>

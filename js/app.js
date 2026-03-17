@@ -2,7 +2,7 @@
 import { QUESTIONS } from "./data/questions.js";
 import { BUILD_INFO } from "./data/build-info.js";
 import { scoreAnswers, pillarMeta } from "./core/report.js";
-import { toast, safeText, formatNumber, downloadJSON, uid } from "./utils.js";
+import { toast, safeText, formatNumber, downloadJSON, downloadText, uid } from "./utils.js";
 import { buildAnalytics } from "./core/analytics.js";
 import { loadReports, addReport, clearReports, findReportById } from "./core/storage.js";
 import { buildCompareUIData } from "./core/compare.js";
@@ -18,6 +18,7 @@ import {
 import { buildContentPlan } from "./core/content-plan.js";
 import { buildPressKit } from "./core/presskit.js";
 import { buildCommercialPlan } from "./core/commercial.js";
+import { buildGrowthSuite } from "./core/growth-suite.js";
 
 import {
   verifyPin,
@@ -98,6 +99,13 @@ const dlcRoadmap = document.getElementById("dlcRoadmap");
 const projectBuildFoot = document.getElementById("projectBuildFoot");
 const reportLocaleSelect = document.getElementById("reportLocaleSelect");
 const teamHandoffCard = document.getElementById("teamHandoffCard");
+const benchmarkSummary = document.getElementById("benchmarkSummary");
+const benchmarkGrid = document.getElementById("benchmarkGrid");
+const pricingGrid = document.getElementById("pricingGrid");
+const sprintBoard = document.getElementById("sprintBoard");
+const integrationChecklist = document.getElementById("integrationChecklist");
+const growthSuiteSummary = document.getElementById("growthSuiteSummary");
+const btnDownloadExecutionPack = document.getElementById("btnDownloadExecutionPack");
 
 const pillarChips = document.getElementById("pillarChips");
 const pillarBars = document.getElementById("pillarBars");
@@ -255,6 +263,7 @@ function bind(){
 
   btnCopyTeamSummary?.addEventListener("click", copyTeamSummary);
   btnDownloadTeamSummary?.addEventListener("click", downloadTeamSummary);
+  btnDownloadExecutionPack?.addEventListener("click", downloadExecutionPack);
   reportLocaleSelect?.addEventListener("change", ()=>{
     state.reportLocale = reportLocaleSelect.value || "pt-BR";
     saveReportLocale(state.reportLocale);
@@ -541,6 +550,7 @@ function buildReport(){
   const contentPlan = buildContentPlan({ answers: sourceAnswers, reportResult: result });
   const pressKit = buildPressKit({ answers: sourceAnswers, reportResult: result, analytics });
   const commercial = buildCommercialPlan({ answers: sourceAnswers, reportResult: result, analytics });
+  const growthSuite = buildGrowthSuite({ answers: sourceAnswers, reportResult: result, analytics, commercial });
 
   const name = safeText(sourceAnswers.artist_name || "Artista");
   const stamp = new Date().toLocaleString("pt-BR");
@@ -556,6 +566,7 @@ function buildReport(){
     contentPlan,
     pressKit,
     commercial,
+    growthSuite,
     build: { ...BUILD_INFO }
   };
 
@@ -582,6 +593,9 @@ function applyReportView(fullReport){
   const commercial = fullReport?.commercial?.offers?.length
     ? fullReport.commercial
     : buildCommercialPlan({ answers: sourceAnswers, reportResult: result, analytics });
+  const growthSuite = fullReport?.growthSuite?.benchmark?.length
+    ? fullReport.growthSuite
+    : buildGrowthSuite({ answers: sourceAnswers, reportResult: result, analytics, commercial });
   const buildMeta = fullReport?.build || BUILD_INFO;
 
   const name = safeText(fullReport?.artistName || state.answers.artist_name || "Artista");
@@ -598,6 +612,7 @@ function applyReportView(fullReport){
     contentPlan,
     pressKit,
     commercial,
+    growthSuite,
     build: { ...buildMeta }
   };
 
@@ -641,6 +656,7 @@ function applyReportView(fullReport){
   renderAnalytics(analytics);
   renderStrategicReport(result, state.lastBuiltReport);
   renderCommercialPlan(commercial);
+  renderGrowthSuite(growthSuite);
 
   if(priorities30){
     priorities30.innerHTML = "";
@@ -877,6 +893,112 @@ function renderCommercialPlan(plan){
       dlcRoadmap.appendChild(el);
     });
   }
+}
+
+
+function renderGrowthSuite(suite){
+  if(growthSuiteSummary) growthSuiteSummary.textContent = safeText(suite?.summary || "Growth suite indisponível.");
+
+  if(benchmarkSummary){
+    const band = suite?.benchmarkBand || {};
+    benchmarkSummary.className = `profileBadge profileBadge--${escapeHtml(safeText(band.color || "mid"))}`;
+    benchmarkSummary.textContent = safeText(band.label || "—");
+  }
+
+  if(benchmarkGrid){
+    benchmarkGrid.innerHTML = "";
+    (suite?.benchmark || []).forEach(item=>{
+      const pct = Math.max(0, Math.min(100, Number(item.mine || 0)));
+      const target = Math.max(0, Math.min(100, Number(item.target || 0)));
+      const el = document.createElement("div");
+      el.className = "benchmarkCard";
+      el.innerHTML = `
+        <div class="benchmarkCard__top">
+          <div class="benchmarkCard__name">${escapeHtml(safeText(item.name))}</div>
+          <div class="benchmarkCard__score">${pct}/100</div>
+        </div>
+        <div class="benchmarkTrack">
+          <div class="benchmarkTrack__mine" style="width:${pct}%"></div>
+          <div class="benchmarkTrack__target" style="left:${target}%"></div>
+        </div>
+        <div class="benchmarkCard__hint">Meta sugerida: ${target}/100 • ${escapeHtml(safeText(item.hint || ""))}</div>
+      `;
+      benchmarkGrid.appendChild(el);
+    });
+  }
+
+  if(pricingGrid){
+    pricingGrid.innerHTML = "";
+    (suite?.pricing || []).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "offerCard";
+      el.innerHTML = `
+        <div class="offerCard__top">
+          <div>
+            <div class="offerCard__tier">Pricing lab</div>
+            <div class="offerCard__name">${escapeHtml(safeText(item.name))}</div>
+          </div>
+          <div class="offerCard__price">${escapeHtml(safeText(item.price))}</div>
+        </div>
+        <div class="offerCard__summary">${escapeHtml(safeText(item.rationale))}</div>
+        <div class="scriptCard">${escapeHtml(safeText(item.script))}</div>
+      `;
+      pricingGrid.appendChild(el);
+    });
+  }
+
+  if(sprintBoard){
+    sprintBoard.innerHTML = "";
+    (suite?.sprint || []).forEach(item=>{
+      const el = document.createElement("div");
+      el.className = "sprintCard";
+      el.innerHTML = `
+        <div class="sprintCard__title">${escapeHtml(safeText(item.label))}</div>
+        <ul class="alist">${(item.tasks || []).map(task=>`<li>${escapeHtml(safeText(task))}</li>`).join("")}</ul>
+      `;
+      sprintBoard.appendChild(el);
+    });
+  }
+
+  if(integrationChecklist){
+    integrationChecklist.innerHTML = "";
+    (suite?.integrations || []).forEach(item=>{
+      const li = document.createElement("li");
+      li.className = "check";
+      li.innerHTML = `<div class="check__box check__box--${escapeHtml(safeText(item.status || "next"))}" aria-hidden="true"></div><div class="check__text"><strong>${escapeHtml(safeText(item.label))}</strong> • ${escapeHtml(safeText(item.detail || ""))}</div>`;
+      integrationChecklist.appendChild(li);
+    });
+  }
+}
+
+function downloadExecutionPack(){
+  const report = state.lastBuiltReport;
+  if(!report?.result){ toast("Gere um relatório antes."); return; }
+  const suite = report.growthSuite || {};
+  const lines = [];
+  lines.push(`# Execution Pack — ${safeText(report.artistName || 'Artista')}`);
+  lines.push('');
+  lines.push(`- Build: ${(report.build || BUILD_INFO).buildLabel}`);
+  lines.push(`- Conclusão do projeto: ${(report.build || BUILD_INFO).completionPct}%`);
+  lines.push(`- Etapa: ${(report.build || BUILD_INFO).currentMilestone}`);
+  lines.push(`- Score geral: ${report.result?.overall || 0}/100`);
+  lines.push('');
+  lines.push('## Resumo');
+  lines.push(safeText(suite.summary || report.result?.diagnostics?.summary || '—'));
+  lines.push('');
+  lines.push('## Benchmark');
+  (suite.benchmark || []).forEach(item=> lines.push(`- ${item.name}: ${item.mine}/100 (meta ${item.target}/100)`));
+  lines.push('');
+  lines.push('## Pricing Lab');
+  (suite.pricing || []).forEach(item=>{ lines.push(`- ${item.name}: ${item.price} — ${item.rationale}`); lines.push(`  Script: ${item.script}`); });
+  lines.push('');
+  lines.push('## Sprint 21 dias');
+  (suite.sprint || []).forEach(block=>{ lines.push(`### ${block.label}`); (block.tasks || []).forEach(t=> lines.push(`- ${t}`)); lines.push(''); });
+  lines.push('## Integrações ready');
+  (suite.integrations || []).forEach(item=> lines.push(`- [${item.status}] ${item.label}: ${item.detail}`));
+  downloadText(`vale-execution-pack-${slug(safeText(report.artistName || 'artista'))}-${(report.build || BUILD_INFO).buildSlug}.md`, lines.join("
+"), "text/markdown;charset=utf-8");
+  toast("Execution Pack baixado.");
 }
 
 function registerServiceWorker(){

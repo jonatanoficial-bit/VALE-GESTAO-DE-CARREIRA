@@ -1,25 +1,16 @@
 {
-  "build": "2026-03-17 11:43 -03",
-  "buildSlug": "2026-03-17-1143",
-  "stage": "Etapa 5 de 7 · Colaboração e Internacionalização Prep",
-  "completionPct": 84,
-  "releaseChannel": "collab-i18n-prep",
-  "deployTargets": ["GitHub Pages", "Vercel"],
-  "newFeatures": [
-    "fix geracao de relatorio final",
-    "fallback no fechamento do wizard",
-    "handoff multilanguage",
-    "exportacao markdown",
-    "copy summary para equipe",
-    "docs de sprint"
-  ],
-  "remaining": [
-    "auth",
-    "database online",
-    "billing",
-    "pdf server-side",
-    "i18n completo",
-    "integracoes",
-    "ia cloud"
+  "buildId": "2026-03-17-1423",
+  "buildLabel": "BUILD 2026-03-17 14:23 -03",
+  "completionPct": 91,
+  "stage": "Etapa 6 de 7 · Execução Comercial + Integrações Ready",
+  "deploy": ["GitHub Pages", "Vercel"],
+  "engine": "IA estratégica local v5 + growth suite offline",
+  "remainingMajorItems": [
+    "autenticação e multiusuário",
+    "sincronização em nuvem",
+    "pagamentos/assinaturas",
+    "integrações reais com APIs",
+    "PDF premium server-side",
+    "camada enterprise/marketplace"
   ]
 }

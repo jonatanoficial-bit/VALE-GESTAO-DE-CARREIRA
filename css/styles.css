@@ -773,3 +773,27 @@ html[data-theme="light"] .spark{ background: rgba(255,255,255,.92); }
   .teamHandoffGrid{grid-template-columns:1fr}
   .selectLike{width:100%}
 }
+
+
+/* BUILD 2026-03-17 14:23 -03 */
+.reportLocaleRow{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:14px 0 16px;flex-wrap:wrap}
+.teamHandoffCard{border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:18px;background:rgba(255,255,255,.03);box-shadow:0 14px 40px rgba(0,0,0,.18)}
+.teamHandoffCard__top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.teamHandoffCard__title{font-size:1.05rem;font-weight:700}
+.teamHandoffCard__meta{opacity:.72;font-size:.92rem;margin-top:4px}
+.teamHandoffBadge{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(127,91,255,.15);font-weight:700}
+.teamHandoffGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
+.teamHandoffGrid ul{padding-left:18px;margin:10px 0 0}
+.benchmarkGrid,.sprintBoard{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px}
+.benchmarkCard,.sprintCard,.scriptCard{border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(255,255,255,.03)}
+.benchmarkCard{padding:16px}
+.benchmarkCard__top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+.benchmarkCard__name{font-weight:700}.benchmarkCard__score{font-weight:800}
+.benchmarkTrack{position:relative;height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:10px}
+.benchmarkTrack__mine{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#7f5bff,#2dd4bf)}
+.benchmarkTrack__target{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;opacity:.8}
+.benchmarkCard__hint{opacity:.76;font-size:.92rem;line-height:1.45}
+.scriptCard{padding:12px 14px;margin-top:10px;line-height:1.5;opacity:.9}
+.sprintCard{padding:16px}.sprintCard__title{font-weight:800;margin-bottom:10px}
+.check__box--ok{background:#34d399}.check__box--next{background:#f59e0b}.check__box--future{background:#64748b}
+@media (max-width: 720px){.reportLocaleRow{align-items:flex-start}.teamHandoffCard__top{flex-direction:column;align-items:flex-start}}
