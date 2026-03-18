@@ -151,87 +151,6 @@ export function buildGrowthSuite({ answers = {}, reportResult = null, analytics 
     ads === 'none' ? 'Sem investir dinheiro agora, concentre esforço em criativos derivados e outreach orgânico.' : 'Trate mídia paga como aceleração de criativo vencedor, não como solução isolada.'
   ];
 
-  const enterpriseMode = score >= 82
-    ? { label: 'Modo Agência / Selo', color: 'good' }
-    : score >= 63
-      ? { label: 'Modo Equipe / Manager', color: 'mid' }
-      : { label: 'Modo Artista Solo', color: 'low' };
-
-  const enterprisePillars = [
-    { name: 'Operação', value: team === 'solo' ? 'solo com apoio pontual' : 'time ou parceiros já acionáveis' },
-    { name: 'Comercial', value: commercial?.readiness >= 70 ? 'oferta repetível pronta' : 'estrutura comercial em consolidação' },
-    { name: 'Documentação', value: planning === 'pro' || planning === 'bom' ? 'ritmo documentado' : 'precisa formalizar processos' },
-    { name: 'Escala', value: audience >= 50000 ? 'já pode testar múltiplas frentes' : 'escalar com foco em 1 canal vencedor' }
-  ];
-
-  const enterpriseSummary = `${artist} deve operar em ${enterpriseMode.label.toLowerCase()} nesta build. A melhor configuração agora combina processo simples, handoff claro e uma esteira comercial que permita vender, entregar e repetir sem aumentar custo fixo.`;
-
-  const marketplace = [
-    {
-      tag: 'DLC',
-      name: 'Marketing Digital',
-      valueAdd: '+aquisição',
-      summary: 'Aumenta alcance e conversão com criativos, calendário e funil de campanha.',
-      deliverables: ['plano de criativos por lançamento', 'roteiros para anúncios e collabs', 'painel de métricas por objetivo']
-    },
-    {
-      tag: 'DLC',
-      name: 'Monetização Musical',
-      valueAdd: '+receita',
-      summary: 'Expande ticket com ofertas, comunidade, merch e serviços musicais.',
-      deliverables: ['escada de produtos', 'oferta recorrente', 'scripts de conversão e follow-up']
-    },
-    {
-      tag: 'DLC',
-      name: 'Shows e Turnês',
-      valueAdd: '+agenda',
-      summary: 'Transforma prova social em agenda vendável por cidade, igreja, casa ou evento.',
-      deliverables: ['pipeline de booking', 'proposta comercial por praça', 'mapa de repertório e formatos']
-    },
-    {
-      tag: 'DLC',
-      name: 'Carreira Internacional',
-      valueAdd: '+global',
-      summary: 'Prepara pitch, comunicação e expansão para mercados e parceiros internacionais.',
-      deliverables: ['pitch multilíngue', 'priorização de mercados', 'checklist de creators e mídia']
-    },
-    {
-      tag: 'DLC',
-      name: 'Branding Premium',
-      valueAdd: '+percepção',
-      summary: 'Fortalece identidade visual, posicionamento e percepção de valor do artista.',
-      deliverables: ['direção estética', 'guia de voz e mensagem', 'padrão visual para capas e campanhas']
-    }
-  ];
-
-  const artistTier = score >= 88
-    ? { label: 'Elite', color: 'good', summary: `${artist} já apresenta maturidade para competir com projetos comerciais independentes de alto padrão.` }
-    : score >= 75
-      ? { label: 'Profissional', color: 'good', summary: `${artist} já tem sinais fortes de produto vendável e precisa sustentar consistência operacional.` }
-      : score >= 61
-        ? { label: 'Crescimento', color: 'mid', summary: `${artist} está em crescimento organizado, com espaço claro para aumentar percepção de valor e repetição comercial.` }
-        : score >= 46
-          ? { label: 'Estruturando', color: 'mid', summary: `${artist} já saiu da fase inicial, mas ainda precisa consolidar marca, oferta e rotina.` }
-          : { label: 'Iniciante', color: 'low', summary: `${artist} ainda está montando a base essencial para operar como produto musical competitivo.` };
-
-  const globalReadiness = [
-    {
-      label: 'Marca exportável',
-      score: clamp(score * 0.92 + (planning === 'pro' ? 6 : 0)),
-      hint: 'Mede clareza de identidade, consistência estética e capacidade de ser entendido fora do contexto local.'
-    },
-    {
-      label: 'Operação multilíngue',
-      score: clamp(28 + (team !== 'solo' ? 15 : 0) + (commercial?.readiness || 0) * 0.45),
-      hint: 'Avalia preparo para adaptar pitch, conteúdo e atendimento em mais de um idioma.'
-    },
-    {
-      label: 'Monetização escalável',
-      score: clamp((commercial?.readiness || 0) * 0.88 + (shows !== 'nao' ? 10 : 0)),
-      hint: 'Indica se o projeto consegue crescer receita sem depender de uma única fonte ou praça.'
-    }
-  ];
-
   return {
     benchmarkBand: band,
     benchmark,
@@ -239,12 +158,6 @@ export function buildGrowthSuite({ answers = {}, reportResult = null, analytics 
     sprint,
     integrations,
     expansion,
-    enterpriseMode,
-    enterprisePillars,
-    enterpriseSummary,
-    marketplace,
-    artistTier,
-    globalReadiness,
-    summary: `${artist} entra na fase de execução comercial com benchmark ${band.label.toLowerCase()}. O projeto já consegue operar como produto vendável, desde que mantenha disciplina de sprint, oferta clara, documentação das próximas melhorias e escolha correta do modo enterprise.`
+    summary: `${artist} entra na fase de execução comercial com benchmark ${band.label.toLowerCase()}. O projeto já consegue operar como produto vendável, desde que mantenha disciplina de sprint, oferta clara e documentação das próximas melhorias.`
   };
 }

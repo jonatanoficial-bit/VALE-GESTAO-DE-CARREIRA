@@ -1,23 +1,19 @@
-# Project Status
+# Status do Projeto
 
-- BUILD: 2026-03-17 18:11 -03
-- Build ID: 2026-03-17-1811
-- Conclusão atual: 100%
-- Etapa atual: 7 de 7 — Escala Enterprise + Marketplace DLC
-- Deploy alvo: GitHub Pages / Vercel
-- Engine: IA estratégica local v6 + enterprise marketplace offline
+- BUILD: 2026-03-18 11:36 -03
+- Conclusão atual: 93%
+- Etapa atual: 7 de 7 — Estabilidade, correções e deploy limpo
+- Situação: funcional com hotfix de abertura aplicado
 
-## Entregas desta build
-- camada enterprise com modo de operação recomendado
-- marketplace de DLCs com valor agregado e entregáveis
-- tier competitivo do artista (iniciante a elite)
-- leitura de prontidão internacional
-- service worker atualizado com cache completo da build
-- documentação final de handoff para equipe
+## O que foi corrigido nesta build
+- erro de sintaxe em `js/app.js` que impedia a inicialização completa no navegador
+- versionamento de assets atualizado para forçar cache novo
+- service worker ajustado para navegação network-first e atualização sem cache intermediário
+- `growth-suite.js` incluído no cache offline
 
-## Próximos passos pós-100%
-- backend/login e sincronização em nuvem
-- cobrança e assinatura SaaS
-- integrações reais via API
-- exportação PDF premium server-side
-- analytics de produto e validação com usuários reais
+## O que ainda falta
+- login/autenticação
+- banco online
+- pagamentos/assinaturas
+- integrações reais com APIs
+- analytics de produto

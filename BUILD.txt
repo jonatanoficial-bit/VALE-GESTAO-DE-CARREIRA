@@ -1,8 +1,9 @@
-VALE GESTAO DE CARREIRA
-BUILD: 2026-03-17 18:11 -03
-BUILD ID: 2026-03-17-1811
-STATUS: 100% concluído
-ETAPA: 7 de 7 — Escala Enterprise + Marketplace DLC
-DEPLOY: GitHub Pages / Vercel
-ENGINE: IA estratégica local v6 + enterprise marketplace offline
-ZIP: VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-17-1811.zip
+BUILD: 2026-03-18 11:36 -03
+ZIP: VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-18-1136.zip
+CONCLUSAO_ATUAL: 93%
+ETAPA_ATUAL: 7 de 7 - Estabilidade, correcoes e deploy limpo
+HOTFIXES:
+- Corrigido erro de sintaxe em js/app.js que impedia a abertura do app no deploy.
+- Atualizado versionamento de assets para forcar cache novo no GitHub/Vercel.
+- Service worker ajustado para updateViaCache none e fetch de navegacao com network-first.
+- Incluido growth-suite no cache offline.

@@ -1,17 +1,36 @@
 {
-  "buildId": "2026-03-17-1811",
-  "buildLabel": "BUILD 2026-03-17 18:11 -03",
-  "completionPct": 100,
-  "stage": "Etapa 7 de 7 · Escala Enterprise + Marketplace DLC",
-  "deployTargets": ["GitHub Pages", "Vercel"],
-  "releaseChannel": "enterprise-marketplace-dlc",
-  "reportEngine": "IA estratégica local v6 + enterprise marketplace offline",
-  "zipName": "VALE-GESTAO-DE-CARREIRA-BUILD-2026-03-17-1811.zip",
-  "post100Roadmap": [
-    "login e sincronizacao em nuvem",
-    "pagamentos e assinaturas",
-    "integracoes reais com Spotify/YouTube/Meta",
+  "buildId": "2026-03-17-1423",
+  "buildLabel": "BUILD 2026-03-17 14:23 -03",
+  "completionPct": 91,
+  "stage": "7 de 7 - Estabilidade, correcoes e deploy limpo",
+  "deploy": [
+    "GitHub Pages",
+    "Vercel"
+  ],
+  "engine": "IA estratégica local v5 + growth suite offline",
+  "remainingMajorItems": [
+    "autenticação e multiusuário",
+    "sincronização em nuvem",
+    "pagamentos/assinaturas",
+    "integrações reais com APIs",
     "PDF premium server-side",
-    "analytics de produto e validacao com usuarios"
+    "camada enterprise/marketplace"
+  ],
+  "build": "2026-03-18-1136",
+  "build_label": "BUILD 2026-03-18 11:36 -03",
+  "completion_pct": 93,
+  "status": "funcional com hotfix de abertura aplicado",
+  "done": [
+    "correcao do erro de sintaxe que travava o app",
+    "cache busting de assets",
+    "service worker atualizado",
+    "growth-suite incluido no cache offline"
+  ],
+  "remaining": [
+    "login/autenticacao",
+    "banco online",
+    "pagamentos",
+    "integracoes reais com APIs",
+    "analytics de produto"
   ]
 }

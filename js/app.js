@@ -106,13 +106,6 @@ const sprintBoard = document.getElementById("sprintBoard");
 const integrationChecklist = document.getElementById("integrationChecklist");
 const growthSuiteSummary = document.getElementById("growthSuiteSummary");
 const btnDownloadExecutionPack = document.getElementById("btnDownloadExecutionPack");
-const enterpriseBadge = document.getElementById("enterpriseBadge");
-const enterpriseSummary = document.getElementById("enterpriseSummary");
-const enterprisePillars = document.getElementById("enterprisePillars");
-const marketplaceGrid = document.getElementById("marketplaceGrid");
-const artistTierBadge = document.getElementById("artistTierBadge");
-const artistTierSummary = document.getElementById("artistTierSummary");
-const globalReadinessGrid = document.getElementById("globalReadinessGrid");
 
 const pillarChips = document.getElementById("pillarChips");
 const pillarBars = document.getElementById("pillarBars");
@@ -976,66 +969,6 @@ function renderGrowthSuite(suite){
       integrationChecklist.appendChild(li);
     });
   }
-
-  if(enterpriseBadge){
-    const mode = suite?.enterpriseMode || {};
-    enterpriseBadge.className = `profileBadge profileBadge--${escapeHtml(safeText(mode.color || "mid"))}`;
-    enterpriseBadge.textContent = safeText(mode.label || "—");
-  }
-  if(enterpriseSummary) enterpriseSummary.textContent = safeText(suite?.enterpriseSummary || "Camada enterprise indisponível.");
-  if(enterprisePillars){
-    enterprisePillars.innerHTML = "";
-    (suite?.enterprisePillars || []).forEach(item=>{
-      const chip = document.createElement("div");
-      chip.className = "chip";
-      chip.innerHTML = `<strong>${escapeHtml(safeText(item.name || "Pilar"))}</strong> • ${escapeHtml(safeText(item.value || "—"))}`;
-      enterprisePillars.appendChild(chip);
-    });
-  }
-
-  if(marketplaceGrid){
-    marketplaceGrid.innerHTML = "";
-    (suite?.marketplace || []).forEach(item=>{
-      const el = document.createElement("div");
-      el.className = "offerCard";
-      el.innerHTML = `
-        <div class="offerCard__top">
-          <div>
-            <div class="offerCard__tier">${escapeHtml(safeText(item.tag || "DLC"))}</div>
-            <div class="offerCard__name">${escapeHtml(safeText(item.name || "Expansao"))}</div>
-          </div>
-          <div class="offerCard__price">${escapeHtml(safeText(item.valueAdd || "+valor"))}</div>
-        </div>
-        <div class="offerCard__summary">${escapeHtml(safeText(item.summary || ""))}</div>
-        <ul class="offerCard__list">${(item.deliverables || []).map(d=>`<li>${escapeHtml(safeText(d))}</li>`).join("")}</ul>
-      `;
-      marketplaceGrid.appendChild(el);
-    });
-  }
-
-  if(artistTierBadge){
-    const tier = suite?.artistTier || {};
-    artistTierBadge.className = `profileBadge profileBadge--${escapeHtml(safeText(tier.color || "mid"))}`;
-    artistTierBadge.textContent = safeText(tier.label || "—");
-  }
-  if(artistTierSummary) artistTierSummary.textContent = safeText(suite?.artistTier?.summary || "Tier competitivo indisponível.");
-
-  if(globalReadinessGrid){
-    globalReadinessGrid.innerHTML = "";
-    (suite?.globalReadiness || []).forEach(card=>{
-      const tone = scoreTone(Number(card?.score || 0));
-      const el = document.createElement("div");
-      el.className = `readinessCard readinessCard--${tone}`;
-      el.innerHTML = `
-        <div class="readinessCard__top">
-          <div class="readinessCard__label">${escapeHtml(safeText(card.label || "Leitura"))}</div>
-          <div class="readinessCard__score">${Number(card.score || 0)}</div>
-        </div>
-        <div class="readinessCard__hint">${escapeHtml(safeText(card.hint || ""))}</div>
-      `;
-      globalReadinessGrid.appendChild(el);
-    });
-  }
 }
 
 function downloadExecutionPack(){
@@ -1063,8 +996,7 @@ function downloadExecutionPack(){
   (suite.sprint || []).forEach(block=>{ lines.push(`### ${block.label}`); (block.tasks || []).forEach(t=> lines.push(`- ${t}`)); lines.push(''); });
   lines.push('## Integrações ready');
   (suite.integrations || []).forEach(item=> lines.push(`- [${item.status}] ${item.label}: ${item.detail}`));
-  downloadText(`vale-execution-pack-${slug(safeText(report.artistName || 'artista'))}-${(report.build || BUILD_INFO).buildSlug}.md`, lines.join("
-"), "text/markdown;charset=utf-8");
+  TEMPPLACEHOLDER
   toast("Execution Pack baixado.");
 }
 
@@ -1072,7 +1004,7 @@ function registerServiceWorker(){
   if(location.protocol === "file:") return;
   if(!("serviceWorker" in navigator)) return;
   window.addEventListener("load", ()=>{
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    navigator.serviceWorker.register(`./sw.js?v=${BUILD_INFO.buildSlug}`, { updateViaCache: "none" }).catch(()=>{});
   });
 }
 
